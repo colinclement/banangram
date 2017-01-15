@@ -1,12 +1,12 @@
 """
-trie.py
+graph.py
 
 author: Colin Clement
 date: 2016-01-14
 
-Given a lexicon of words, Trie object computes the corresponding trie.
-TODO: Create function or class DAWG which merges suffixes in Trie to
-get the DAWG of a lexicon.
+Given a lexicon of words, DirectedGraph object computes the corresponding trie.
+trie_to_dawg then dramatically trims this graph by merging subtrees, thus
+combining word nodes with matching suffixes.
 """
 
 
