@@ -11,9 +11,7 @@ get the DAWG of a lexicon.
 
 
 from collections import defaultdict
-#import numpy as np
-
-whitespace = '\t\n\x0b\x0c\r ' 
+from datetime import datetime
 
 
 class Node(object):
@@ -47,7 +45,6 @@ class Node(object):
 
     def __str__(self):
         """ Make print(self) useful """
-        #pstr = "{label} \033[1;35;49m("  # pretty purple
         pstr = "\033[1;35;49m("  # pretty purple
         if self.strset:
             pstr += ('{}, '*len(self.strset)).format(*self.strset)[:-2]
@@ -88,23 +85,22 @@ class DirectedGraph(object):
         E = len(c)
         queue = set(c)
         while queue:
-            print(E, queue)
             n = queue.pop()
             visited.update(set([n]))
             c = n.children.values()
             E += len(c)
             queue.update(set(c))
-        return E, visited
+        return E
 
     @property
     def nodes(self):
         """ Return a list of all nodes """
         def children(node):
             c = node.children
-            return [node] + reduce(lambda x, y: x+y, 
+            return [node] + reduce(lambda x, y: x+y,
                                    [children(c[k]) for k in c], [])
         return set(children(self.top))  # only unique nodes!
-    
+
     @property
     def N(self):
         """ Number of nodes """
@@ -117,58 +113,36 @@ class DirectedGraph(object):
     def parselex(self, w):
         """
         Parse string w, adding its lexicon to trie. Any whitespace
-        delimits words
+        delimits words. Also computes maxdepth to leaves for each node,
+        a useful way to order the graph reduction below.
         input:
             w : str, lexicon to add to graph
         """
         assert type(w) == str, "w must be str"
-        loc = self.top
-        path = ''
-        N = len(w)
-        for i, c in enumerate(w):
-            if c in loc.children:
-                loc = loc[c]
-                path += c
-            elif c in whitespace:
-                loc.strset.add(path)
-                loc = self.top  # end of word, go to top
-                path = ''
-            else:  # Create edge, node
-                loc = loc.addchild(c, Node())
-                path += c
-                if i == N - 1:  # in case last char isnt whitespace
-                    loc.strset.add(path)
-        #self.update_maxdepth()
-
-    def _down(self, node, word):
-        """ Traverse tree to find the node at which word lives """
-        nextnode = node[word[0]]
-        if not nextnode:  # word not in lexicon
-            return None
-        if len(word) > 1:
-            return self._down(nextnode, word[1:])
-        else:
-            return nextnode
+        for word in w.split():
+            N = len(word)
+            loc = self.top
+            loc.maxdepth = max(loc.maxdepth, N)
+            for i, c in enumerate(word):
+                if c in loc.children:
+                    loc = loc[c]
+                else:
+                    loc = loc.addchild(c, Node())
+                loc.maxdepth = max(loc.maxdepth, N - 1 - i)
+            loc.strset.add(word)
 
     def downto(self, word):
         """ Return node corresponding to word or None """
-        return self._down(self.top, word)
-
-    #TODO: Consider an iterative instead of recursive implementation
-    def _count_maxdepths(self, node, depth = 0):
-        if node.maxdepth < depth:  # Cut off search if longer path exists
-            node.maxdepth = depth
-            p = node.parent
-            if p:
-                return self._count_maxdepths(p, depth + 1)
-
-    def update_maxdepth(self):
-        """
-        Calculates the maximum depth to leaves for each node.
-        Useful for efficiently trimming Trie into a DAWG
-        """
-        for l in self.leaves:
-            self._count_maxdepths(l)
+        def down(self, node, word):
+            """ Traverse tree to find the node at which word lives """
+            nextnode = node[word[0]]
+            if not nextnode:  # word not in lexicon
+                return None
+            if len(word) > 1:
+                return down(nextnode, word[1:])
+            else:
+                return nextnode
+        return down(self.top, word)
 
 
 def trie_to_dawg(G):
@@ -190,13 +164,22 @@ def trie_to_dawg(G):
                 nodes = hashdict[h]
                 receiver = nodes[0]
                 for n in nodes[1:]:  # The parents adopt the receiver
-                    n.parent.children[n.parentlabel] = receiver 
+                    n.parent.children[n.parentlabel] = receiver
+                    receiver.strset.update(n.strset)
                     del n
 
 
 if __name__ == "__main__":
-    lex = "car cars cat cats do dog dogs done ear ears eat eats"
+    #w = "car cars cat cats do dog dogs done ear ears eat eats"
+    #G = DirectedGraph()
+    #G.parselex(lex)
+    #trie_to_dawg(G)
+    with open('../data/sowpods.txt', 'r') as infile:
+        w = infile.read()
     G = DirectedGraph()
-    G.parselex(lex)
+    start = datetime.now()
+    G.parselex(w)
+    print("Parsing took {}".format(datetime.now()-start))
+    start = datetime.now()
     trie_to_dawg(G)
-
+    print("Trimming to DAWG took {}".format(datetime.now()-start))
