@@ -21,7 +21,7 @@ class Node(object):
         """
         self.children = {}
         self.parent = None
-        self.parentlabel = None
+        self.parentedge = None
         self.strset = set([])  # list of complete words
         self.maxdepth = -1  # not yet calculated
 
@@ -37,7 +37,7 @@ class Node(object):
         assert type(edge) is str, 'edge must be a char'
         self.children[edge] = node
         node.parent = self
-        node.parentlabel = edge
+        node.parentedge = edge
         return node
 
     def __getitem__(self, c):
@@ -59,8 +59,9 @@ class Node(object):
     def __hash__(self):
         """
         Returns an integer which is uniquely determined by the children
-        edges, that is the next possible characters in the graph. This
-        will improve the speed of comparing two nodes when building a DAWG
+        edges, that is the next possible characters in the graph and whether
+        this node corresponds to a word. This will improve the speed
+        of comparing two subtrees when building a DAWG
         """
         eow = str(1*bool(self.strset))
         return hash(eow + ''.join(sorted(self.children.keys())))
@@ -154,32 +155,37 @@ def trie_to_dawg(G):
         structure.
         """
         depthdict = defaultdict(list)
-        for n in G.nodes:
-            depthdict[n.maxdepth] += [n]
+        [depthdict[n.maxdepth].append(n) for n in G.nodes]
         for d in sorted(depthdict.keys()):
             hashdict = defaultdict(list)
-            for n in depthdict[d]:
-                hashdict[hash(n)] += [n]
+            [hashdict[hash(n)].append(n) for n in depthdict[d]]
             for h in hashdict:
                 nodes = hashdict[h]
-                receiver = nodes[0]
-                for n in nodes[1:]:  # The parents adopt the receiver
-                    n.parent.children[n.parentlabel] = receiver
-                    receiver.strset.update(n.strset)
+                one = nodes[0]
+                for n in nodes[1:]:  # The parents adopt the one child
+                    n.parent.children[n.parentedge] = one
                     del n
+                    # receiver.strset.update(n.strset)  # space expensive
 
 
 if __name__ == "__main__":
-    #w = "car cars cat cats do dog dogs done ear ears eat eats"
-    #G = DirectedGraph()
-    #G.parselex(lex)
-    #trie_to_dawg(G)
+    lex = "car cars cat cats do dog dogs done ear ears eat eats"
+    # G = DirectedGraph()
+    # G.parselex(lex)
+    # trie_to_dawg(G)
     with open('../data/sowpods.txt', 'r') as infile:
         w = infile.read()
+
     G = DirectedGraph()
+
     start = datetime.now()
-    G.parselex(w)
+    G.parselex(w[:100000])
     print("Parsing took {}".format(datetime.now()-start))
+
+    print("Nodes = {}, edges = {}".format(G.N, G.E))
+
     start = datetime.now()
     trie_to_dawg(G)
     print("Trimming to DAWG took {}".format(datetime.now()-start))
+
+    print("Nodes = {}, edges = {}".format(G.N, G.E))
