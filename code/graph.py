@@ -1,12 +1,12 @@
 """
-trie.py
+graph.py
 
 author: Colin Clement
 date: 2016-01-14
 
-Given a lexicon of words, Trie object computes the corresponding trie.
-TODO: Create function or class DAWG which merges suffixes in Trie to
-get the DAWG of a lexicon.
+Given a lexicon of words, DirectedGraph object computes the corresponding trie.
+trie_to_dawg then dramatically trims this graph by merging subtrees, thus
+combining word nodes with matching suffixes.
 """
 
 
@@ -21,9 +21,10 @@ class Node(object):
         """
         self.children = {}
         self.parent = None
-        self.parentlabel = None
+        self.parentedge = None
         self.strset = set([])  # list of complete words
         self.maxdepth = -1  # not yet calculated
+        self.hashcache = None
 
     def addchild(self, edge, node):
         """
@@ -37,11 +38,14 @@ class Node(object):
         assert type(edge) is str, 'edge must be a char'
         self.children[edge] = node
         node.parent = self
-        node.parentlabel = edge
+        node.parentedge = edge
         return node
 
     def __getitem__(self, c):
-        return self.children[c]
+        try:
+            return self.children[c]
+        except KeyError as kerr:
+            return None
 
     def __str__(self):
         """ Make print(self) useful """
@@ -56,14 +60,33 @@ class Node(object):
         """ I like default printing in ipython """
         return self.__str__()
 
+    def siblings(self):
+        p = self.parent
+        if p:
+            return [p.children[k] for k in p.children if k != self.parentedge]
+        else:
+            return []
+
+    def walk(self, func=lambda x: x):
+        """ apply func to all descendents, return list """
+        c, edges = self.children, sorted(self.children.keys())
+        return [func(self)] + reduce(lambda x, y: x + y,
+                                     [c[e].walk(func) for e in edges], [])
+
+    @staticmethod
+    def hashstr(node):
+        eow = str(1*bool(node.strset))
+        return eow + ''.join(sorted(node.children.keys()))
+
     def __hash__(self):
         """
         Returns an integer which is uniquely determined by the children
-        edges, that is the next possible characters in the graph. This
-        will improve the speed of comparing two nodes when building a DAWG
+        edges, that is the next possible characters in the graph and whether
+        this node corresponds to a word. This will improve the speed
+        of comparing two subtrees when building a DAWG
         """
-        eow = str(1*bool(self.strset))
-        return hash(eow + ''.join(sorted(self.children.keys())))
+        hashstr = ''.join(self.walk(lambda x: x.hashstr(x)))
+        return hash(hashstr)
 
 
 class DirectedGraph(object):
@@ -74,8 +97,6 @@ class DirectedGraph(object):
     """
     def __init__(self):
         self.top = Node()
-        self.edges = defaultdict(set)
-        self.maxdepth = -1
 
     @property
     def E(self):
@@ -95,16 +116,12 @@ class DirectedGraph(object):
     @property
     def nodes(self):
         """ Return a list of all nodes """
-        def children(node):
-            c = node.children
-            return [node] + reduce(lambda x, y: x+y,
-                                   [children(c[k]) for k in c], [])
-        return set(children(self.top))  # only unique nodes!
+        return self.top.walk()
 
     @property
     def N(self):
         """ Number of nodes """
-        return len(self.nodes)
+        return len(set(self.nodes))
 
     @property
     def leaves(self):
@@ -133,7 +150,7 @@ class DirectedGraph(object):
 
     def downto(self, word):
         """ Return node corresponding to word or None """
-        def down(self, node, word):
+        def down(node, word):
             """ Traverse tree to find the node at which word lives """
             nextnode = node[word[0]]
             if not nextnode:  # word not in lexicon
@@ -154,32 +171,34 @@ def trie_to_dawg(G):
         structure.
         """
         depthdict = defaultdict(list)
-        for n in G.nodes:
-            depthdict[n.maxdepth] += [n]
+        [depthdict[n.maxdepth].append(n) for n in G.nodes]
         for d in sorted(depthdict.keys()):
             hashdict = defaultdict(list)
-            for n in depthdict[d]:
-                hashdict[hash(n)] += [n]
+            [hashdict[hash(n)].append(n) for n in depthdict[d]]
             for h in hashdict:
                 nodes = hashdict[h]
-                receiver = nodes[0]
-                for n in nodes[1:]:  # The parents adopt the receiver
-                    n.parent.children[n.parentlabel] = receiver
-                    receiver.strset.update(n.strset)
+                one = nodes[0]
+                for n in nodes[1:]:  # The parents adopt the one child
+                    n.parent.children[n.parentedge] = one
                     del n
+                    # receiver.strset.update(n.strset)  # space expensive
 
 
 if __name__ == "__main__":
-    #w = "car cars cat cats do dog dogs done ear ears eat eats"
-    #G = DirectedGraph()
-    #G.parselex(lex)
-    #trie_to_dawg(G)
+    lex = "car cars cat cats do dog dogs done ear ears eat eats"
     with open('../data/sowpods.txt', 'r') as infile:
         w = infile.read()
+
     G = DirectedGraph()
+
     start = datetime.now()
-    G.parselex(w)
+    G.parselex(w[:100000])
     print("Parsing took {}".format(datetime.now()-start))
+
+    #print("Nodes = {}, edges = {}".format(G.N, G.E))
+
     start = datetime.now()
-    trie_to_dawg(G)
+    #trie_to_dawg(G)
     print("Trimming to DAWG took {}".format(datetime.now()-start))
+
+    #print("Nodes = {}, edges = {}".format(G.N, G.E))

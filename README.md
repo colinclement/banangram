@@ -13,3 +13,8 @@ Alemi's suggestion:
     And for more options heuristically push the search to 'words' that themselves are subwords of more worda
     
 GADDAG is likely a faster data structure, but takes up more space, also built to solve board constraints not present in Bangrams.
+
+
+## Sources:
+  * Appel and Jacobsen (1986) "The World's Fastest Scrabble Program"
+  * http://stevehanov.ca/blog/index.php?id=115
