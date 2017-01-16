@@ -36,6 +36,10 @@ class Board(object):
         self.tile.append(s)
         self.tiledict[(x,y)] = s
 
+    def placeall(self, xs, ys, ss):
+        for x, y, s in zip(xs, ys, ss):
+            self.place(x, y, s)
+
     def check(self, x, y):
         return self.tiledict[(x,y)]
 
@@ -67,5 +71,4 @@ if __name__ == "__main__":
     xs = [2, 0, 2, 0, 1, 2, 0, 2]
     ys = [-1, 0, 0, 1, 1, 1, 2, 2]
     ss = [s for s in 'claeatts']
-    for x, y, s in zip(xs, ys, ss):
-        B.place(x, y, s)
+    B.placeall(xs, ys, ss)

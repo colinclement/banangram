@@ -73,6 +73,21 @@ class Node(object):
         return [func(self)] + reduce(lambda x, y: x + y,
                                      [c[e].walk(func) for e in edges], [])
 
+    def downto(self, word):
+        """ Return node corresponding to word or None """
+        def down(node, word):
+            """ Traverse tree to find the node at which word lives """
+            if not word:
+                return node
+            nextnode = node[word[0]]
+            if not nextnode:  # word not in lexicon
+                return None
+            if len(word) > 1:
+                return down(nextnode, word[1:])
+            else:
+                return nextnode
+        return down(self, word)
+
     @staticmethod
     def hashstr(node):
         eow = str(1*bool(node.strset))
@@ -97,6 +112,7 @@ class DirectedGraph(object):
     """
     def __init__(self):
         self.top = Node()
+        self.N = 1
 
     @property
     def E(self):
@@ -117,11 +133,6 @@ class DirectedGraph(object):
     def nodes(self):
         """ Return a list of all nodes """
         return self.top.walk()
-
-    @property
-    def N(self):
-        """ Number of nodes """
-        return len(set(self.nodes))
 
     @property
     def leaves(self):
@@ -145,22 +156,12 @@ class DirectedGraph(object):
                     loc = loc[c]
                 else:
                     loc = loc.addchild(c, Node())
+                    self.N += 1
                 loc.maxdepth = max(loc.maxdepth, N - 1 - i)
             loc.strset.add(word)
 
     def downto(self, word):
-        """ Return node corresponding to word or None """
-        def down(node, word):
-            """ Traverse tree to find the node at which word lives """
-            nextnode = node[word[0]]
-            if not nextnode:  # word not in lexicon
-                return None
-            if len(word) > 1:
-                return down(nextnode, word[1:])
-            else:
-                return nextnode
-        return down(self.top, word)
-
+        return self.top.downto(word)
 
 def trie_to_dawg(G):
         """
@@ -180,8 +181,9 @@ def trie_to_dawg(G):
                 one = nodes[0]
                 for n in nodes[1:]:  # The parents adopt the one child
                     n.parent.children[n.parentedge] = one
+                    G.N -= 1
                     del n
-                    # receiver.strset.update(n.strset)  # space expensive
+                    # one.strset.update(n.strset)  # space expensive
 
 
 if __name__ == "__main__":
@@ -192,13 +194,13 @@ if __name__ == "__main__":
     G = DirectedGraph()
 
     start = datetime.now()
-    G.parselex(w[:100000])
+    G.parselex(w)#[:800000])
     print("Parsing took {}".format(datetime.now()-start))
 
-    #print("Nodes = {}, edges = {}".format(G.N, G.E))
+    print("Nodes = {}".format(G.N))
 
     start = datetime.now()
-    #trie_to_dawg(G)
+    trie_to_dawg(G)
     print("Trimming to DAWG took {}".format(datetime.now()-start))
 
-    #print("Nodes = {}, edges = {}".format(G.N, G.E))
+    print("Nodes = {}".format(G.N))
