@@ -163,6 +163,7 @@ class DirectedGraph(object):
     def downto(self, word):
         return self.top.downto(word)
 
+
 def trie_to_dawg(G):
         """
         Merges all identical subtrees in graph G to for a Directed
@@ -194,7 +195,7 @@ if __name__ == "__main__":
     G = DirectedGraph()
 
     start = datetime.now()
-    G.parselex(w)#[:800000])
+    G.parselex(w)  # [:800000])
     print("Parsing took {}".format(datetime.now()-start))
 
     print("Nodes = {}".format(G.N))
