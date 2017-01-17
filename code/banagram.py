@@ -53,6 +53,8 @@ class Bananagrams(object):
         else:  # check that children make words
             return [c for c in node.children if node[c].strset]
 
+    # TODO: Implement backtrack algorithm in across direction
+
     def solve(self, tiles):
         pass
 
@@ -79,8 +81,8 @@ if __name__ == "__main__":
         print("\tAnchors x = " + (' ,'.join(map(str, anchors))))
         cc = B.board.cross_checks(i)
         for c in cc:
-            print("CC for (y,x)=({},{}) across: {}".format(i, c,
-                                                           B.cross_check(i, c)))
+            allowed = B.cross_check(i, c)
+            print("CC for (y,x)=({},{}) across: {}".format(i, c, allowed))
     print("Down")
     for j in range(min(B.board.x)-1, max(B.board.x)+2):
         print("Column " + str(j))
@@ -88,7 +90,5 @@ if __name__ == "__main__":
         print("\tAnchors x = " + (' ,'.join(map(str, anchors))))
         cc = B.board.cross_checks(j, down=True)
         for c in cc:
-            print("CC for (y,x)=({},{}) down: {}".format(c, j,
-                                                         B.cross_check(c, j, True)))
-
-
+            allowed = B.cross_check(c, j, True)
+            print("CC for (y,x)=({},{}) down: {}".format(c, j, allowed))
