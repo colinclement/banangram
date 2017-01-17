@@ -17,43 +17,45 @@ class Bananagrams(object):
         self.G = dawg
 
     def __repr__(self):
+        """ Print the board """
         return self.board.__repr__()
 
-    def cross_check(self, x, y, down=False):
-        check = [y-1]
-        prefix = ''
-        # Look above empty tile
-        while check:
-            up = check.pop(0)
-            n = self.board.check(x,up)
-            prefix = n + prefix
-            if n:
-                check.append(up-1)
-        # Walk down DAWG to empty tile
+    def cross_check(self, y, x, down=False):
+        """
+        When searching across (down), find compatible
+        letters for adjacent tiles already placed, by
+        walking down (across).
+        input:
+            y, x: ints, coordinates of empty tile with
+                    adjacent occupancy to be checked
+            down: True/False, current search direction,
+                    will look for compatible letters in
+                    opposite direction
+        returns:
+            allowed: list of allowed letters, compatible
+                    with words existing on board
+        """
+        if down:  # Search down, cross-check across
+            prefix = self.board.walk(y, x-1, not down, -1)
+            suffix = self.board.walk(y, x+1, not down, +1)
+        else:  # Search across, cross-check down
+            prefix = self.board.walk(y-1, x, not down, -1)
+            suffix = self.board.walk(y+1, x, not down, +1)
         node = self.G.downto(prefix)
-        # Are there tiles below?
-        if self.board.check(x, y+1):
-            # What chars have allowed suffix?
-            check = [y+1]
-            suffix = ''
-            while check:
-                down = check.pop(0)
-                n = self.board.check(x, down)
-                suffix += n
-                if n:
-                    check.append(down+1)
-            c = node.children
+        if suffix and node.children:
             allowed = []
-            for k in node.children:
-                n = node.children[k].downto(suffix)
-                if n.strset:
-                    allowed.append(k)
+            for edge in node.children:
+                n = node.children[edge].downto(suffix)
+                if n:
+                    if n.strset:
+                        allowed.append(edge)
             return allowed
-        else:
-            return node.children.keys()
+        else:  # check that children make words
+            return [c for c in node.children if node[c].strset]
 
     def solve(self, tiles):
         pass
+
 
 if __name__ == "__main__":
     lex = "at car cars cat cats do dog dogs done ear ears eat eats"
@@ -70,5 +72,23 @@ if __name__ == "__main__":
 
     print(B)
 
-    print(B.cross_check(2,3))
+    print("Across")
+    for i in range(min(B.board.y)-1, max(B.board.y)+2):
+        print('Row ' + str(i))
+        anchors = B.board.find_anchors(i)
+        print("\tAnchors x = " + (' ,'.join(map(str, anchors))))
+        cc = B.board.cross_checks(i)
+        for c in cc:
+            print("CC for (y,x)=({},{}) across: {}".format(i, c,
+                                                           B.cross_check(i, c)))
+    print("Down")
+    for j in range(min(B.board.x)-1, max(B.board.x)+2):
+        print("Column " + str(j))
+        anchors = B.board.find_anchors(j, down=True)
+        print("\tAnchors x = " + (' ,'.join(map(str, anchors))))
+        cc = B.board.cross_checks(j, down=True)
+        for c in cc:
+            print("CC for (y,x)=({},{}) down: {}".format(c, j,
+                                                         B.cross_check(c, j, True)))
+
 
