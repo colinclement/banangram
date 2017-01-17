@@ -12,63 +12,128 @@ from collections import defaultdict
 
 
 class Board(object):
+    """ Representation of a Bananagram board """
     def __init__(self):
-        self.x = []  # integers of occupied sites x-coords
         self.y = []  # integers of occupied sites y-coords
+        self.x = []  # integers of occupied sites x-coords
         self.tile = []
         self.tiledict = defaultdict(str)
 
     def __repr__(self):
-        boardstr = "\033[0;30;47m"
+        """ Pretty print the board! Coords are abs """
+        xc_range = range(min(self.x), max(self.x)+1)
+        boardstr = ' ' + ''.join(map(lambda x: str(abs(x)), xc_range))
+        boardstr += '\n'
         for y in range(min(self.y), max(self.y)+1):
+            boardstr += str(abs(y)) + "\033[0;30;47m" 
             for x in range(min(self.x), max(self.x)+1):
                 s = self.check(x, y)
                 if s:
-                    boardstr += s
+                    boardstr += s.upper()
                 else:
                     boardstr += ' '
-            boardstr += '\n'
-        return boardstr+"\033[0m"
+            boardstr += '\033[0m' + '\n'
+        return boardstr
 
-    def place(self, x, y, s):
-        self.x.append(x)
+    def place(self, y, x, s):
+        """ Place tile at y, x with letter s """
         self.y.append(y)
+        self.x.append(x)
         self.tile.append(s)
-        self.tiledict[(x,y)] = s
+        self.tiledict[(y,x)] = s
 
-    def placeall(self, xs, ys, ss):
-        for x, y, s in zip(xs, ys, ss):
-            self.place(x, y, s)
+    def pop(self):
+        """ Removes the last-placed tile and returns y, x, s """
+        x, y, s = self.y.pop(), self.x.pop(), self.tile.pop()
+        self.tiledict.pop((y,x))
+        return y, x, s
 
-    def check(self, x, y):
-        return self.tiledict[(x,y)]
+    def placeall(self, ys, xs, ss):
+        """ place a list of tiles """
+        for y, x, s in zip(ys, xs, ss):
+            self.place(y, x, s)
 
-    def find_anchors(self, down=False, ind=0):
+    def check(self, y, x):
+        """ Return value of tile at (y, x) or None """
+        return self.tiledict[(y,x)]
+
+    def walk(self, y, x, down=False, sgn=1):
+        """ 
+        Starting at site (y,x), move down (across)
+        in direction sgn (+/-1) reading tiles.
+        input:
+            y, x: ints, coordinates of empty tile with
+                    adjacent occupancy to be checked
+            down: True/False, walk line
+            sgn: +/-1, direction of walk.
+                e.g. 'up' is down=True, sgn=-1
+        returns:
+            path: str of tiles visited
+        """
+        # Walk along line starting at coord
+        if down:  # move along y at constant x
+            coord, line = x, y
+            def check(yy):
+                return self.check(yy, x)
+        else:  # move along x at constant y
+            coord, line = y, x
+            def check(xx):
+                return self.check(y, xx)
+        path = ''
+        tocheck = [line]  # go up or down
+        while tocheck:
+            nxt = tocheck.pop(0)
+            n = check(nxt)
+            if n:
+                tocheck.append(nxt + sgn)
+            if sgn > 0:
+                path += n
+            else:  # add backwards
+                path = n + path
+        return path
+ 
+    def coord_line(self, down=False):
+        """ Select coordinates for line search down/across"""
         if down:
-            coord, line = self.y, self.x
+            return self.y, self.x
         else:
-            coord, line = self.x, self.y
+            return self.x, self.y
+
+    def find_anchors(self, ind, down=False):
+        """ 
+        Find anchor points, left(up)-most unnocupied sites adjacent to occupied
+        sites.
+        input:
+            down: True/False.
+            ind: int, row (down=False) or col (down=True)
+        returns:
+            set of anchor coords in row or col ind
+        """
+        coord, line = self.coord_line(down)
         occupied = {coord[i] for i,j in enumerate(line) if j == ind}
         left = {o - 1 for o in occupied}
         left.difference_update(occupied)
         return left
 
-    def cross_checks(self, down=False, ind=0):
-        if down:
-            coord, line = self.y, self.x
-        else:
-            coord, line = self.x, self.y
-        occupied = {coord[i] for i,j in enumerate(line) if j == ind}
-        occ_up = {coord[i] for i,j in enumerate(line) if j == ind - 1}
-        occ_up.difference_update(occupied)
-        occ_down = {coord[i] for i,j in enumerate(line) if j == ind + 1}
-        occ_down.difference_update(occupied)
-        return occ_up, occ_down
+    def cross_checks(self, ind, down=False):
+        """
+        Find points which need to be cross-check for board consistency.
+        input:
+            ind: int, row (down=False) or col (down=True)
+            down: True/False
+        returns:
+            set of cross-check coords in row or col ind    
+        """
+        coord, line = self.coord_line(down)
+        occ = {coord[i] for i,j in enumerate(line) if j == ind}
+        up = {coord[i] for i,j in enumerate(line) if j == ind - 1}
+        down = {coord[i] for i,j in enumerate(line) if j == ind + 1}
+        return (up.union(down)).difference(occ)
 
 
 if __name__ == "__main__":
     B = Board()
-    xs = [2, 0, 2, 0, 1, 2, 0, 2]
     ys = [-1, 0, 0, 1, 1, 1, 2, 2]
+    xs = [2, 0, 2, 0, 1, 2, 0, 2]
     ss = [s for s in 'claeatts']
-    B.placeall(xs, ys, ss)
+    B.placeall(ys, xs, ss)
