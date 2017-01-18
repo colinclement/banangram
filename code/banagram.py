@@ -119,6 +119,8 @@ class Bananagrams(object):
 
 
 if __name__ == "__main__":
+    anchor_cross = False
+
     lex = "at car cars cat cats do dog dogs done ear ears eat eats"
     G = DirectedGraph()
     G.parselex(lex)
@@ -133,21 +135,26 @@ if __name__ == "__main__":
 
     print(B)
 
-    print("Across")
-    for i in range(min(B.board.y)-1, max(B.board.y)+2):
-        print('Row ' + str(i))
-        anchors = B.board.find_anchors(i)
-        print("\tAnchors x = " + (' ,'.join(map(str, anchors))))
-        cc = B.board.cross_checks(i)
-        for c in cc:
-            allowed = B.cross_check(i, c)
-            print("CC for (y,x)=({},{}) across: {}".format(i, c, allowed))
-    print("Down")
-    for j in range(min(B.board.x)-1, max(B.board.x)+2):
-        print("Column " + str(j))
-        anchors = B.board.find_anchors(j, down=True)
-        print("\tAnchors x = " + (' ,'.join(map(str, anchors))))
-        cc = B.board.cross_checks(j, down=True)
-        for c in cc:
-            allowed = B.cross_check(c, j, True)
-            print("CC for (y,x)=({},{}) down: {}".format(c, j, allowed))
+    if anchor_cross:
+        print("Across")
+        for i in range(min(B.board.y)-1, max(B.board.y)+2):
+            print('Row ' + str(i))
+            anchors = B.board.find_anchors(i)
+            print("\tAnchors x = " + (' ,'.join(map(str, anchors))))
+            cc = B.board.cross_checks(i)
+            for c in cc:
+                allowed = B.cross_check(i, c)
+                print("CC for (y,x)=({},{}) across: {}".format(i, c, allowed))
+        print("Down")
+        for j in range(min(B.board.x)-1, max(B.board.x)+2):
+            print("Column " + str(j))
+            anchors = B.board.find_anchors(j, down=True)
+            print("\tAnchors x = " + (' ,'.join(map(str, anchors))))
+            cc = B.board.cross_checks(j, down=True)
+            for c in cc:
+                allowed = B.cross_check(c, j, True)
+                print("CC for (y,x)=({},{}) down: {}".format(c, j, allowed))
+
+    print("Test for right extend from (y,x)=(0,2)")
+    print("with rack = 'a', 'r', 't', 's'")
+    print(B._right('', B.G.top, 0, 2, ['a', 'r', 't', 's']))
