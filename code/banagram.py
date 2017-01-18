@@ -10,6 +10,9 @@ This does it, it plays bananagrams
 from board import Board
 from graph import DirectedGraph, trie_to_dawg
 
+def flatten(lst):
+    return reduce(lambda x, y: x + y, lst, [])
+
 
 class Bananagrams(object):
     def __init__(self, dawg, **kwargs):
@@ -19,6 +22,10 @@ class Bananagrams(object):
     def __repr__(self):
         """ Print the board """
         return self.board.__repr__()
+
+    # TODO: No 'if down:' in bananagram, only in board!
+    # Figure out better, more consistent convention. Or
+    # Commit fully to the transposition idea...
 
     def cross_check(self, y, x, down=False):
         """
@@ -53,9 +60,61 @@ class Bananagrams(object):
         else:  # check that children make words
             return [c for c in node.children if node[c].strset]
 
-    # TODO: Implement backtrack algorithm in across direction
-
-    def solve(self, tiles):
+    def _right(self, partial, node, y, x, rack, down=False):
+        # TODO: Make bidirectional
+        l = self.board.check(y, x)
+        results = []
+        if l:
+            if node[l]:
+                results += flatten([self._right(partial+l, node[l], 
+                                                y, x+1, rack, down)])
+            return results
+        else:
+            for e in node.children:
+                if e in rack: #and cross-check
+                    rack.remove(e)
+                    results += flatten([self._right(partial+e, node[e],
+                                                    y, x+1, rack, down)])
+                    rack.append(e)
+            if node.strset:
+                results += [partial]
+            return results
+ 
+    def _prefix(self, rack, ind, down=False):
+        """
+        Return all possible left parts at each anchor in row/col ind
+        """
+        #NOTE: ANCHOR IS EMPTY!
+        anchors = sorted(self.board.find_anchors(ind, down))
+        checks = sorted(self.board.cross_checks(ind, down))
+        occ = sorted(self.board.occupied(ind, down))
+        if down:  # dict(coord: {allowed edges})
+            cross = {c: self.cross_checks(c, ind, down) for c in checks}
+        else:
+            cross = {c: self.cross_checks(ind, c, down) for c in checks}
+        leftparts = defaultdict(list)
+        for i, a in enumerate(anchors):
+            #leftparts[a] += ['']
+            if i:
+                maxleft = min(len(rack), anchors[i]-anchors[i-1])
+                maxleft = min(maxleft, min([a - o for o in occ if a - o > 0]))
+                maxleft = min(maxleft-2, len(rack))
+            else:  # first one, bounded only by rack size
+                maxleft = len(rack)
+            prefix = self.board.walk(ind, a-1, down, -1)
+            if prefix:
+                return prefix
+            else:  # walk the DAWG
+                for l in range(maxleft):
+                    if a-l in cross:  # check
+                        pass
+                    else:
+                        pass  # walk
+                   
+    def _leftpart(self):
+        pass
+                    
+    def consume(self, tiles):
         pass
 
 
@@ -67,10 +126,10 @@ if __name__ == "__main__":
     tiles = [s for s in "cateas"]
 
     B = Bananagrams(G)
-    xs = [2, 2, 0, 1, 2]
     ys = [0, 1, 2, 2, 2]
+    xs = [2, 2, 0, 1, 2]
     ss = [s for s in 'eacat']
-    B.board.placeall(xs, ys, ss)
+    B.board.placeall(ys, xs, ss)
 
     print(B)
 
