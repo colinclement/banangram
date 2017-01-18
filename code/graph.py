@@ -43,7 +43,10 @@ class Node(object):
 
     def __getitem__(self, c):
         try:
-            return self.children[c]
+            if c:
+                return self.children[c]
+            else:  # empty string returns self
+                return self
         except KeyError as kerr:
             return None
 

@@ -27,7 +27,7 @@ class Board(object):
         for y in range(min(self.y), max(self.y)+1):
             boardstr += str(abs(y)) + "\033[0;30;47m"
             for x in range(min(self.x), max(self.x)+1):
-                s = self.check(x, y)
+                s = self.check(y, x, transpose=False)
                 if s:
                     boardstr += s.upper()
                 else:
@@ -42,9 +42,9 @@ class Board(object):
         self.tile.append(s)
         self.tiledict[(y, x)] = s
 
-    def pop(self):
+    def pop(self, ind=-1):
         """ Removes the last-placed tile and returns y, x, s """
-        x, y, s = self.y.pop(), self.x.pop(), self.tile.pop()
+        x, y, s = self.y.pop(ind), self.x.pop(ind), self.tile.pop(ind)
         self.tiledict.pop((y, x))
         return y, x, s
 
@@ -53,39 +53,45 @@ class Board(object):
         for y, x, s in zip(ys, xs, ss):
             self.place(y, x, s)
 
-    def check(self, y, x):
-        """ Return value of tile at (y, x) or None """
-        return self.tiledict[(y, x)]
-
-    def walk(self, y, x, down=False, sgn=1):
+    def check(self, line, coord, transpose=False):
+        """ 
+        Return value of tile in line, along coord.
+            (line, coord) = (y, x) if transpose=False
+            (line, coord) = (x, y) if transpose=True
         """
-        Starting at site (y,x), move down (across)
-        in direction sgn (+/-1) reading tiles.
+        if transpose:
+            y, x = coord, line
+        else:
+            x, y = coord, line
+        return self.tiledict[(y,x)]
+
+    def coord_line(self, transpose=False):
+        """ Select coordinates for line search, swap if transpose"""
+        if transpose:
+            return self.y, self.x
+        else:
+            return self.x, self.y
+
+    def walk(self, line, coord, transpose=False, sgn=1):
+        """
+        Starting at site (y,x) = (line, coord) if transpose=False
+                         (x,y) = (line, coord) if transpose=True
+        in direction sgn (+/-1) along line (across if transpose=False)
         input:
-            y, x: ints, coordinates of empty tile with
-                    adjacent occupancy to be checked
-            down: True/False, walk line
-            sgn: +/-1, direction of walk.
-                e.g. 'up' is down=True, sgn=-1
+            line: int, line along which to walk 
+                (y=line if transpose=False, x=line if tranpose=True)
+            coord: int, coordinate along line to start walking
+                (x=coord if transpose=False, y=coord if transpose=True)
+            transpose: False/True, swap (y,x)
+            sgn: +/-1, direction along line of walk.
         returns:
-            path: str of tiles visited
+            path: str of tiles visited, including start point
         """
-        # Walk along line starting at coord
-        if down:  # move along y at constant x
-            coord, line = x, y
-
-            def check(yy):
-                return self.check(yy, x)
-        else:  # move along x at constant y
-            coord, line = y, x
-
-            def check(xx):
-                return self.check(y, xx)
         path = ''
-        tocheck = [line]  # go up or down
+        tocheck = [coord]
         while tocheck:
             nxt = tocheck.pop(0)
-            n = check(nxt)
+            n = self.check(line, nxt, transpose)
             if n:
                 tocheck.append(nxt + sgn)
             if sgn > 0:
@@ -94,43 +100,43 @@ class Board(object):
                 path = n + path
         return path
 
-    def coord_line(self, down=False):
-        """ Select coordinates for line search down/across"""
-        if down:
-            return self.y, self.x
-        else:
-            return self.x, self.y
+    def occupied(self, line, transpose=False):
+        """ 
+        Return occupied indices from row y=line (transpose=False)
+        or column x=line (transpose=True)
+        """
+        c, l = self.coord_line(transpose)
+        return {c[i] for i, j in enumerate(l) if j == line}
 
-    def find_anchors(self, ind, down=False):
+    def find_anchors(self, line, transpose=False):
         """
         Find anchor points, left(up)-most unnocupied sites adjacent to occupied
-        sites.
+        tiles.
         input:
-            down: True/False.
-            ind: int, row (down=False) or col (down=True)
+            line: int, row (transpose=False) or col (transpose=True)
+            transpose: True/False. swap y, x 
         returns:
             set of anchor coords in row or col ind
         """
-        coord, line = self.coord_line(down)
-        occupied = {coord[i] for i, j in enumerate(line) if j == ind}
+        occupied = self.occupied(line, transpose)
         left = {o - 1 for o in occupied}
         left.difference_update(occupied)
         return left
 
-    def cross_checks(self, ind, down=False):
+    def cross_checks(self, line, transpose=False):
         """
         Find points which need to be cross-check for board consistency.
         input:
-            ind: int, row (down=False) or col (down=True)
-            down: True/False
+            line: int, y = row (transpose=False) or 
+                    x=col (transpose=True)
+            transpose: True/False, swap y,x
         returns:
             set of cross-check coords in row or col ind
         """
-        coord, line = self.coord_line(down)
-        occ = {coord[i] for i, j in enumerate(line) if j == ind}
-        up = {coord[i] for i, j in enumerate(line) if j == ind - 1}
-        down = {coord[i] for i, j in enumerate(line) if j == ind + 1}
-        return (up.union(down)).difference(occ)
+        occupied = self.occupied(line, transpose)
+        up = self.occupied(line - 1, transpose) 
+        down = self.occupied(line + 1, transpose) 
+        return (up.union(down)).difference(occupied)
 
 
 if __name__ == "__main__":
