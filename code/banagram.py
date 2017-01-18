@@ -79,6 +79,19 @@ class Bananagrams(object):
             if node.strset:
                 results += [partial]
             return results
+
+    def _left(self, partial, node, yanchor, xanchor, rack, limit, down=False):
+        results = self._right(partial, node, yanchor, xanchor+1, rack, down)
+        if limit > 0:
+            for e in node.children:
+                if e in rack: #and cross-check
+                    rack.remove(e)
+                    results += flatten([self._left(partial+e, node[e],
+                                                    yanchor, xanchor, rack,
+                                                    limit-1, down)])
+                    rack.append(e)
+        return results
+
  
     def _prefix(self, rack, ind, down=False):
         """
@@ -121,7 +134,7 @@ class Bananagrams(object):
 if __name__ == "__main__":
     anchor_cross = False
 
-    lex = "at car cars cat cats do dog dogs done ear ears eat eats"
+    lex = "at car cars cat cats do dog dogs done ear ears eat eats deed ate"
     G = DirectedGraph()
     G.parselex(lex)
     trie_to_dawg(G)
@@ -158,3 +171,7 @@ if __name__ == "__main__":
     print("Test for right extend from (y,x)=(0,2)")
     print("with rack = 'a', 'r', 't', 's'")
     print(B._right('', B.G.top, 0, 2, ['a', 'r', 't', 's']))
+    print("")
+    print("Test for up to 3 left extend from anchor (y,x)=(0,1)")
+    print("with rack = 'a', 'e', 'd', 'd', 'n', 'o', 't'")
+    print(B._left('', B.G.top, 0, 1, ['d', 'o', 'n', 'a', 't', 'e', 'd'], 3))
