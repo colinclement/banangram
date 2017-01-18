@@ -7,8 +7,9 @@ date: 2016-01-16
 This does it, it plays bananagrams
 """
 
-from board import Board
+from collections import defaultdict
 from graph import DirectedGraph, trie_to_dawg
+from board import Board
 
 def flatten(lst):
     return reduce(lambda x, y: x + y, lst, [])
@@ -57,90 +58,77 @@ class Bananagrams(object):
         else:  # check that children make words
             return [c for c in node.children if node[c].strset]
 
-    def _right(self, partial, node, y, x, rack, transpose=False):
-        # TODO: Make bidirectional
-        l = self.board.check(y, x)
-        results = []
-        if l:
-            if node[l]:
-                results += flatten([self._right(partial+l, node[l], 
-                                                y, x+1, rack, transpose)])
-            return results
-        else:
-            for e in node.children:
-                if e in rack: #and cross-check
-                    rack.remove(e)
-                    results += flatten([self._right(partial+e, node[e],
-                                                    y, x+1, rack, transpose)])
-                    rack.append(e)
-            if node.strset:
-                results += [partial]
+    def get_words(self, line, anchor, rack, checks=[], transpose=False):
+        occ = self.board.occupied(line, transpose)
+        cross = {c: self.cross_check(line, c, transpose) for c in checks}
+        maxlen = min([len(rack)]+[anchor - o - 1 for o in occ 
+                                    if anchor - o > 0])
+        prefix = self.board.walk(line, anchor-1, transpose, -1)
+
+        def right(partial, node, coord, rack):
+            l = self.board.check(line, coord, transpose)
+            results = []
+            if l:
+                if node[l]:
+                    results += flatten([right(partial+l, node[l], 
+                                              coord+1, rack)])
+                return results
+            else:
+                if node.strset:
+                    results += [partial]
+                for e in node.children:
+                    allowed = set(rack)
+                    if coord in cross:
+                        allowed.intersection_update(cross[coord])
+
+                    if e in allowed:
+                        rack.remove(e)
+                        results += flatten([right(partial+e, node[e],
+                                                  coord+1, rack)])
+                        rack.append(e)
+                return results
+            
+        def left(partial, node, rack, limit):
+            pos = anchor - (maxlen - limit) + 1 
+            complete = right(partial, node, anchor+1, rack)
+            results = []
+            if complete:
+                results = [(pos, complete)]
+            if limit > 0:
+                for e in node.children:
+                    allowed = set(rack)
+                    if pos-1 in cross:
+                        allowed.intersection_update(cross[pos-1])
+
+                    if e in allowed: 
+                        rack.remove(e)
+                        results += flatten([left(partial+e, node[e],
+                                                 rack, limit-1)])
+                        rack.append(e)
             return results
 
-    def _left(self, partial, node, yanchor, xanchor, rack, limit, transpose=False):
-        results = self._right(partial, node, yanchor, xanchor+1, rack, transpose)
-        if limit > 0:
-            for e in node.children:
-                if e in rack: #and cross-check
-                    rack.remove(e)
-                    results += flatten([self._left(partial+e, node[e],
-                                                    yanchor, xanchor, rack,
-                                                    limit-1, transpose)])
-                    rack.append(e)
-        return results
-
- 
-    def _prefix(self, rack, ind, transpose=False):
-        """
-        Return all possible left parts at each anchor in row/col ind
-        """
-        #NOTE: ANCHOR IS EMPTY!
-        anchors = sorted(self.board.find_anchors(ind, transpose))
-        checks = sorted(self.board.cross_checks(ind, transpose))
-        occ = sorted(self.board.occupied(ind, transpose))
-        if transpose:  # dict(coord: {allowed edges})
-            cross = {c: self.cross_checks(c, ind, transpose) for c in checks}
+        if prefix:
+            return right(prefix, G.top.downto(prefix), anchor, rack)
         else:
-            cross = {c: self.cross_checks(ind, c, transpose) for c in checks}
-        leftparts = defaultdict(list)
-        for i, a in enumerate(anchors):
-            #leftparts[a] += ['']
-            if i:
-                maxleft = min(len(rack), anchors[i]-anchors[i-1])
-                maxleft = min(maxleft, min([a - o for o in occ if a - o > 0]))
-                maxleft = min(maxleft-2, len(rack))
-            else:  # first one, bounded only by rack size
-                maxleft = len(rack)
-            prefix = self.board.walk(ind, a-1, transpose, -1)
-            if prefix:
-                return prefix
-            else:  # walk the DAWG
-                for l in range(maxleft):
-                    if a-l in cross:  # check
-                        pass
-                    else:
-                        pass  # walk
-                   
-    def _leftpart(self):
-        pass
-                    
+            return left('', self.G.top, rack, maxlen)
+
     def consume(self, tiles):
         pass
 
 
 if __name__ == "__main__":
-    anchor_cross = True # False
+    anchor_cross = False
 
-    lex = "at car cars cat cats do dog dogs done ear ears eat eats deed ate"
+    lex = "dad at car cars cat cats do dog dogs done ear ears eat eats deed ate"
     G = DirectedGraph()
     G.parselex(lex)
     trie_to_dawg(G)
     tiles = [s for s in "cateas"]
 
     B = Bananagrams(G)
-    ys = [0, 1, 2, 2, 2]
-    xs = [2, 2, 0, 1, 2]
-    ss = [s for s in 'eacat']
+    ys = [0, 1, 2, 2, 2, 3]
+    xs = [2, 2, 0, 1, 2, 1]
+    ss = [s for s in 'eacatt']
     B.board.placeall(ys, xs, ss)
 
     print(B)
@@ -165,10 +153,12 @@ if __name__ == "__main__":
                 allowed = B.cross_check(j, c, True)
                 print("CC for (y,x)=({},{}) down: {}".format(c, j, allowed))
 
-    print("Test for right extend from (y,x)=(0,2)")
-    print("with rack = 'a', 'r', 't', 's'")
-    print(B._right('', B.G.top, 0, 2, ['a', 'r', 't', 's']))
-    print("")
+    #print("Test for right extend from (y,x)=(0,2)")
+    #print("with rack = 'a', 'r', 't', 's'")
+    #print(B._right('', B.G.top, 0, 2, ['a', 'r', 't', 's']))
+    #print("")
     print("Test for up to 3 left extend from anchor (y,x)=(0,1)")
     print("with rack = 'a', 'e', 'd', 'd', 'n', 'o', 't'")
-    print(B._left('', B.G.top, 0, 1, ['d', 'o', 'n', 'a', 't', 'e', 'd'], 3))
+    #print('(0,1)', B.get_words(0, 1, ['d', 'r', 'o', 'n', 'a', 't', 'e', 'd']))
+    print('(1,1)', B.get_words(1, 1, ['d', 'r', 'o', 'n', 'a', 't', 'e', 'd'],
+                               checks=[1]))
