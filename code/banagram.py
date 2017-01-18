@@ -23,31 +23,28 @@ class Bananagrams(object):
         """ Print the board """
         return self.board.__repr__()
 
-    # TODO: No 'if down:' in bananagram, only in board!
-    # Figure out better, more consistent convention. Or
-    # Commit fully to the transposition idea...
-
-    def cross_check(self, y, x, down=False):
+    def cross_check(self, line, coord, transpose=False):
         """
         When searching across (down), find compatible
         letters for adjacent tiles already placed, by
         walking down (across).
         input:
-            y, x: ints, coordinates of empty tile with
-                    adjacent occupancy to be checked
-            down: True/False, current search direction,
-                    will look for compatible letters in
-                    opposite direction
+            line: int, search line (y=line if down=False,
+                    x=line if down=True)
+            coord: int, coordinate along line (x=coord if
+                    down=False, y=coord if down=False)
+            transpose: True/False, swap x,y.
+
+            *Note that when down=False (default), line, coord = (y, x), 
+             the standard 2d array slicing order. In this way down=True
+             is a transpose.
         returns:
             allowed: list of allowed letters, compatible
                     with words existing on board
         """
-        if down:  # Search down, cross-check across
-            prefix = self.board.walk(y, x-1, not down, -1)
-            suffix = self.board.walk(y, x+1, not down, +1)
-        else:  # Search across, cross-check down
-            prefix = self.board.walk(y-1, x, not down, -1)
-            suffix = self.board.walk(y+1, x, not down, +1)
+        # NOTE: walk perpendicular to word-building direction!
+        prefix = self.board.walk(coord, line-1, not transpose, -1)
+        suffix = self.board.walk(coord, line+1, not transpose, +1)
         node = self.G.downto(prefix)
         if suffix and node.children:
             allowed = []
@@ -60,51 +57,51 @@ class Bananagrams(object):
         else:  # check that children make words
             return [c for c in node.children if node[c].strset]
 
-    def _right(self, partial, node, y, x, rack, down=False):
+    def _right(self, partial, node, y, x, rack, transpose=False):
         # TODO: Make bidirectional
         l = self.board.check(y, x)
         results = []
         if l:
             if node[l]:
                 results += flatten([self._right(partial+l, node[l], 
-                                                y, x+1, rack, down)])
+                                                y, x+1, rack, transpose)])
             return results
         else:
             for e in node.children:
                 if e in rack: #and cross-check
                     rack.remove(e)
                     results += flatten([self._right(partial+e, node[e],
-                                                    y, x+1, rack, down)])
+                                                    y, x+1, rack, transpose)])
                     rack.append(e)
             if node.strset:
                 results += [partial]
             return results
 
-    def _left(self, partial, node, yanchor, xanchor, rack, limit, down=False):
-        results = self._right(partial, node, yanchor, xanchor+1, rack, down)
+    def _left(self, partial, node, yanchor, xanchor, rack, limit, transpose=False):
+        results = self._right(partial, node, yanchor, xanchor+1, rack, transpose)
         if limit > 0:
             for e in node.children:
                 if e in rack: #and cross-check
                     rack.remove(e)
                     results += flatten([self._left(partial+e, node[e],
                                                     yanchor, xanchor, rack,
-                                                    limit-1, down)])
+                                                    limit-1, transpose)])
                     rack.append(e)
         return results
 
  
-    def _prefix(self, rack, ind, down=False):
+    def _prefix(self, rack, ind, transpose=False):
         """
         Return all possible left parts at each anchor in row/col ind
         """
         #NOTE: ANCHOR IS EMPTY!
-        anchors = sorted(self.board.find_anchors(ind, down))
-        checks = sorted(self.board.cross_checks(ind, down))
-        occ = sorted(self.board.occupied(ind, down))
-        if down:  # dict(coord: {allowed edges})
-            cross = {c: self.cross_checks(c, ind, down) for c in checks}
+        anchors = sorted(self.board.find_anchors(ind, transpose))
+        checks = sorted(self.board.cross_checks(ind, transpose))
+        occ = sorted(self.board.occupied(ind, transpose))
+        if transpose:  # dict(coord: {allowed edges})
+            cross = {c: self.cross_checks(c, ind, transpose) for c in checks}
         else:
-            cross = {c: self.cross_checks(ind, c, down) for c in checks}
+            cross = {c: self.cross_checks(ind, c, transpose) for c in checks}
         leftparts = defaultdict(list)
         for i, a in enumerate(anchors):
             #leftparts[a] += ['']
@@ -114,7 +111,7 @@ class Bananagrams(object):
                 maxleft = min(maxleft-2, len(rack))
             else:  # first one, bounded only by rack size
                 maxleft = len(rack)
-            prefix = self.board.walk(ind, a-1, down, -1)
+            prefix = self.board.walk(ind, a-1, transpose, -1)
             if prefix:
                 return prefix
             else:  # walk the DAWG
@@ -132,7 +129,7 @@ class Bananagrams(object):
 
 
 if __name__ == "__main__":
-    anchor_cross = False
+    anchor_cross = True # False
 
     lex = "at car cars cat cats do dog dogs done ear ears eat eats deed ate"
     G = DirectedGraph()
@@ -161,11 +158,11 @@ if __name__ == "__main__":
         print("Down")
         for j in range(min(B.board.x)-1, max(B.board.x)+2):
             print("Column " + str(j))
-            anchors = B.board.find_anchors(j, down=True)
+            anchors = B.board.find_anchors(j, transpose=True)
             print("\tAnchors x = " + (' ,'.join(map(str, anchors))))
-            cc = B.board.cross_checks(j, down=True)
+            cc = B.board.cross_checks(j, transpose=True)
             for c in cc:
-                allowed = B.cross_check(c, j, True)
+                allowed = B.cross_check(j, c, True)
                 print("CC for (y,x)=({},{}) down: {}".format(c, j, allowed))
 
     print("Test for right extend from (y,x)=(0,2)")
