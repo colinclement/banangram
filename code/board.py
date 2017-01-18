@@ -27,7 +27,7 @@ class Board(object):
         for y in range(min(self.y), max(self.y)+1):
             boardstr += str(abs(y)) + "\033[0;30;47m"
             for x in range(min(self.x), max(self.x)+1):
-                s = self.check(x, y)
+                s = self.check(y, x)
                 if s:
                     boardstr += s.upper()
                 else:
@@ -42,9 +42,9 @@ class Board(object):
         self.tile.append(s)
         self.tiledict[(y, x)] = s
 
-    def pop(self):
+    def pop(self, ind=-1):
         """ Removes the last-placed tile and returns y, x, s """
-        x, y, s = self.y.pop(), self.x.pop(), self.tile.pop()
+        x, y, s = self.y.pop(ind), self.x.pop(ind), self.tile.pop(ind)
         self.tiledict.pop((y, x))
         return y, x, s
 
@@ -56,6 +56,21 @@ class Board(object):
     def check(self, y, x):
         """ Return value of tile at (y, x) or None """
         return self.tiledict[(y, x)]
+
+    #TODO write helper function with nicer arguments for walk
+
+    def coord_line(self, down=False):
+        """ Select coordinates for line search down/across"""
+        if down:
+            return self.y, self.x
+        else:
+            return self.x, self.y
+
+    def switch(self, y, x, down):
+        if down:
+            return y, x
+        else:
+            return x, y
 
     def walk(self, y, x, down=False, sgn=1):
         """
@@ -94,12 +109,9 @@ class Board(object):
                 path = n + path
         return path
 
-    def coord_line(self, down=False):
-        """ Select coordinates for line search down/across"""
-        if down:
-            return self.y, self.x
-        else:
-            return self.x, self.y
+    def occupied(self, ind, down=False):
+        coord, line = self.coord_line(down)
+        return {coord[i] for i, j in enumerate(line) if j == ind}
 
     def find_anchors(self, ind, down=False):
         """
