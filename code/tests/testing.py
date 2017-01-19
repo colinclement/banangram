@@ -16,18 +16,13 @@ from bananagram import Bananagrams
 def testfunction(function, arguments, expectation):
     assert isinstance(arguments, tuple), "arguments must be tuple"
     result = function(*arguments)
-    match = result == expectation
-    if match:
-        print("{}({}) PASSED".format(function.__func__.func_name, 
-                                     ' ,'.join(map(str, arguments))))
-    else:
-        print("{}({}) PASSED".format(function.__func__.func_name, 
-                                     ' ,'.join(map(str, arguments))))
-    print("Result = {}".format(result))
+    print(">>> {}({})".format(function.__func__.func_name, 
+                                 ' ,'.join(map(str, arguments))))
+    print("\n\t{}".format(result))
     return result
 
-testlex = ("at art army ban break bummer cat came car dad dog done den " + 
-           "ear eatery met mark mean")
+testlex = ("am at art army ban break bummer cat came car dad dog done den " + 
+           "ear eat eatery met metric mantis mark mean smit")
 G = DirectedGraph()
 G.parselex(testlex)
 trie_to_dawg(G)
@@ -43,4 +38,12 @@ print(B)
 
 rack = ['e', 'a', 't', 'r', 'd', 'b', 'm', 'o']
 testfunction(B.get_words, (3, -1, rack, [], False), [(0, ['ear', 'eatery'])])
+
+B.board.placeall([3, 3], [1,2], ['a', 't'])
+print(B)
+
+rack = ['e', 'a', 't', 'r', 'i', 'c', 'd', 'b', 'm', 'o', 's']
+testfunction(B.get_words, (2, 0, rack, [], True), [(1, ['met', 'metric'])])
+
+testfunction(B.get_words, (2, 0, rack, [], True), [(1, ['met', 'metric'])])
 
