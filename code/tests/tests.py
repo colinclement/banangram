@@ -7,6 +7,8 @@ author: Sanuel Kachuck
 date: 2016-01-19
 """
 
+import sys
+sys.path.append('../')
 
 from graph import DirectedGraph, trie_to_dawg
 from board import Board
