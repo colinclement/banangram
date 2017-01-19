@@ -1,6 +1,7 @@
 from graph import DirectedGraph, trie_to_dawg
 from board import Board
-from banagram import Bananagrams
+#from bananagram import Bananagrams
+import bananagram as bg
 
 print('Testing lexicon and DAWG properties')
 lex = "dad at car cars cat cats do dog dogs done ear"
@@ -33,23 +34,24 @@ print('Board finds proper anchor in line 0: {}'.format(board.find_anchors(0)==se
 
 # Test word option generation with free left
 rack = ['d', 'r', 'o', 'n', 'a', 't', 'e', 'd', 'a']
-B = Bananagrams(G, board=board)
-print B.get_words(0, 2, rack)
+B = bg.Bananagrams(G, board=board)
+print B.get_words(0, 2, rack)  # passed 
 
 
 # Test cross-check location identify
 
 # Test cross-check letter identify
-print(B.get_words(1, 2, rack))
-print(B.get_words(1, 1, rack, transpose=True))
+print(B.get_words(1, 2, rack, B.board.cross_checks(1)))  # passed
+print(B.get_words(1, 1, rack, B.board.cross_checks(1, True), transpose=True))  # passed
 B.board.placeall([1, 3, 4], [1, 1, 1], ['r','a','d'])
 for l in 'rad':
     rack.remove(l)
 
 print(B.board)
-
-print(B.get_words(1, 2, rack))
-print(B.get_words(1, 0, rack))
+#
+print(B.get_words(1, 2, rack, B.board.cross_checks(1)))  # passed
+print(B.get_words(1, 0, rack, B.board.cross_checks(1)))  # passed
+print(B.get_words(0, 2, rack, B.board.cross_checks(0)))  # passed
 # Test word option generation with preplaced prefix
 
 
