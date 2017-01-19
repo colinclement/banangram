@@ -1,3 +1,13 @@
+"""
+tests.py
+
+Script for testing various functionality
+
+author: Sanuel Kachuck
+date: 2016-01-19
+"""
+
+
 from graph import DirectedGraph, trie_to_dawg
 from board import Board
 #from bananagram import Bananagrams
