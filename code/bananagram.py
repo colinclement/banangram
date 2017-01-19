@@ -108,7 +108,8 @@ class Bananagrams(object):
             return results
 
         if prefix:
-            return right(prefix, G.top.downto(prefix), anchor, rack)
+            pos = anchor - len(prefix)
+            return [(pos, right(prefix, self.G.downto(prefix), anchor, rack))]
         else:
             return left('', self.G.top, rack, maxlen)
 
