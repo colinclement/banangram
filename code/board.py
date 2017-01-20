@@ -95,9 +95,9 @@ class Board(object):
         """
         ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
         if transpose:
-            return ys, xs
-        else:
             return xs, ys
+        else:
+            return ys, xs
 
     def walk(self, line, coord, transpose=False, sgn=1, **kwargs):
         """
@@ -138,7 +138,7 @@ class Board(object):
             board: tuple (ys (list), xs (list), ss (list)) for
                 specifying a custom board
         """
-        c, l = self.coord_line(transpose, **kwargs)
+        l, c = self.coord_line(transpose, **kwargs)
         return {c[i] for i, j in enumerate(l) if j == line}
 
     def find_anchors(self, line, transpose=False, **kwargs):
