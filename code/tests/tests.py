@@ -17,7 +17,7 @@ import bananagram as bg
 
 print('Testing lexicon and DAWG properties')
 lex = "dad at car cars cat cats do dog dogs done ear"
-lex += "ears eat eats deed ate as read area"
+lex += "ears eat eats deed ate as read area seat"
 # Test DAWG
 G = DirectedGraph()
 G.parselex(lex)
@@ -98,14 +98,24 @@ anchorat(0, 2, rack, board=b)  # passed
 # Test word option generation with preplaced prefix
 
 # Test word placement across
-print('Test across word placement')
+print('Test across word placement: "read" at (y,x)=(1,1)')
 altboard, altrack = B.placeword(1, 1, 'read', rack, b)
 print(B.board.show(board=altboard))
 printrack(altrack)
 
 # Test word placement down
-print('Test down word placement')
-altboard, altrack = B.placeword(3, -1, 'teat', rack, b, transpose=True)
+print('Test down word placement: "neat" at (y,x)=(-1, 3)')
+altboard, altrack = B.placeword(3, -1, 'neat', rack, b, transpose=True)
 print(B.board.show(board=altboard))
 printrack(altrack)
 
+
+print('Test solution algorithm with solveable rack')
+testrack = b[2]
+printrack(testrack)
+print(B.solve(testrack))
+
+print('Test solution algorith with unsolveable rack')
+testrack = b[2] + ['z']
+printrack(testrack)
+print(B.solve(testrack))
