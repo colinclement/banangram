@@ -24,6 +24,26 @@ class Bananagrams(object):
         """ Print the board """
         return self.board.show()
 
+    def anagrams(self, rack):
+        """
+        Return all words that can be formed with letters in rack
+        input:
+            rack: list of str, available characters
+        return:
+            sorted list of words that can be formed from rack
+        """
+        def wordwalk(node, partial, rack):
+            results = []
+            if node.strset:
+                results += [partial]
+            for e in node.children:
+                if e in rack:
+                    rack.remove(e)
+                    results += flatten([wordwalk(node[e], partial+e, rack)])
+                    rack.append(e)
+            return results
+        return sorted(wordwalk(self.G.top, '', rack))
+
     def cross_check(self, line, coord, transpose=False, **kwargs):
         """
         When searching across (down), find compatible
@@ -50,7 +70,9 @@ class Bananagrams(object):
         prefix = self.board.walk(coord, line-1, not transpose, -1, **kwargs)
         suffix = self.board.walk(coord, line+1, not transpose, +1, **kwargs)
         node = self.G.downto(prefix)
-        if suffix and node.children:
+        if not node:  # No edges from prefix
+            return []
+        elif suffix and node.children:
             allowed = []
             for edge in node.children:
                 n = node.children[edge].downto(suffix)
@@ -101,7 +123,7 @@ class Bananagrams(object):
                         (should basically always start at an anchor)
                 rack: list of str, characters used to build words
             returns:
-                list of possible words satisfying board and lexicon constraints
+                set of possible words satisfying board and lexicon constraints
             """
             l = self.board.check(line, coord, transpose, **kwargs)
             results = []
@@ -120,8 +142,9 @@ class Bananagrams(object):
 
                     if e in allowed:
                         rack.remove(e)
-                        results += flatten([right(partial+e, node[e],
-                                                  coord+1, rack)])
+                        if node[e]:
+                            results += flatten([right(partial+e, node[e],
+                                                      coord+1, rack)])
                         rack.append(e)
                 return results
             
@@ -138,7 +161,7 @@ class Bananagrams(object):
                 list of tuples in format described in get_words docstring
             """
             pos = anchor - (maxlen - limit) + 1 
-            complete = right(partial, node, anchor+1, rack)
+            complete = right(partial, node, anchor+1, rack) if node else []
             results = []
             if complete:
                 results = [(pos, complete)]
@@ -155,19 +178,114 @@ class Bananagrams(object):
                         rack.append(e)
             return results
 
-        if prefix:
+        if prefix:  # Results using the alread-placed left part
             pos = anchor - len(prefix)
-            # Results using the alread-placed left part
-            results =  [(pos, right(prefix, self.G.downto(prefix), anchor, rack))]
+            results = []
+            node = self.G.downto(prefix)
+            if node:
+                results = [(pos, right(prefix, node, anchor, rack))]
             # Results going right from anchor
             results += left('', self.G.top, rack, 0)
-            return results
         else:
-            return left('', self.G.top, rack, maxlen)
+            results = left('', self.G.top, rack, maxlen)
 
-    def consume(self, tiles):
-        pass
+        output = set([])
+        for pos, words in results:
+            for w in words:
+                output.add((pos, w))
+        return output
+            
+    def updateboard(self, line, coord, word, board, rack, transpose=False):
+        """
+        Update board and rack with placed word.
+        input:
+            line: int, line along which word is placed
+            coord: int, coordinate along line upon which word is started
+            word: str, word to be placed
+            board: tuple (ys (list), xs (list), ss (list)), board to be
+                    updated
+            rack: list of str, letters in rack to be updated
+            transpose: True (line=y, coord=x)/False (line=x, coord=y)
+        returns:
+            board (tuple of lists, updated), rack (list of str, updated)
+            # NOTE: Returns copied updated board/rack
+        """
+        ys, xs, ss = board
+        ys, xs = self.board.coord_line(board=board, transpose=transpose)
+        # Copies!
+        altrack = [l for l in rack]
+        altys   = [y for y in ys]
+        altxs   = [x for x in xs]
+        altss   = [s for s in ss]
 
+        for i, l in enumerate(word):
+            c = self.board.check(line, coord+i, transpose=False,
+                                    board=(altys, altxs, altss))
+            if not c:
+                altrack.remove(l)
+                altys.append(line)
+                altxs.append(coord+i)
+                altss.append(l)
+
+        altys, altxs = self.board.coord_line(board=(altys, altxs, altss), 
+                                             transpose=transpose)
+        return (altys, altxs, altss), altrack
+
+    def solve(self, rack, branch_limit = 10000):
+        """
+        Solve a bananagram! Only first found solution is returned
+        input:
+            rack: list of str, letters that we can use
+            branch_limit: int, limit on backtrack graph width
+                    (default of 10000)
+        returns:
+            board: tuple of lists (ys, xs, ss), Solution!. If no solution
+                    found, empty tuple is returned.
+        """
+        boards_racks = [self.updateboard(0, 0, w, ([],[],[]), rack)
+                        for w in self.anagrams(rack)]
+        self._solution = ()
+        self._branches = 0
+
+        def backtrack(board, rack):
+            self._branches += 1
+            ys, xs, ss = board
+            ymin, ymax, xmin, xmax = min(ys), max(ys), min(xs), max(xs)
+
+            if not rack:  # DONE!
+                self._solution = board
+
+            if not self._solution and self._branches < branch_limit:
+                # Down moves
+                for x in range(xmin, xmax+1):
+                    cross = self.board.cross_checks(x, True, board=board)
+                    anchors = self.board.find_anchors(x, True, board=board)
+                    for a in anchors:
+                        wlist = self.get_words(x, a, rack, cross, True,
+                                               board=board)
+                        for p, word in wlist:
+                            nxtb, nxtr = self.updateboard(x, p, word, board,
+                                                          rack, True)
+                            if nxtr != rack:  # only call again if playable!
+                                backtrack(nxtb, nxtr)
+                # Across moves
+                for y in range(ymin, ymax+1):
+                    cross = self.board.cross_checks(y, board=board)
+                    anchors = self.board.find_anchors(y, board=board)
+                    for a in anchors:
+                        wlist = self.get_words(y, a, rack, cross, 
+                                               board=board)
+                        for p, word in wlist:
+                            nxtb, nxtr = self.updateboard(y, p, word, board,
+                                                          rack)
+                            if nxtr != rack:  # only call again if playable!
+                                backtrack(nxtb, nxtr)
+
+        [backtrack(b, r) for b, r in boards_racks]
+        if self._solution:
+            self.board.placeall(*self._solution)
+        return self._solution
+ 
 
 if __name__ == "__main__":
     anchor_cross = False

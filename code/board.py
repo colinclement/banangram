@@ -14,6 +14,10 @@ from collections import defaultdict
 class Board(object):
     """ Representation of a Bananagram board """
     def __init__(self):
+        self.reset()
+
+    def reset(self):
+        """ Empty board """
         self.ys = []  # integers of occupied sites y-coords
         self.xs = []  # integers of occupied sites x-coords
         self.ss = []  # list of str at corresponding y, x
@@ -21,6 +25,8 @@ class Board(object):
     def show(self, **kwargs):
         """ Pretty print the board! Coords are abs """
         ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
+        if not ys:
+            return super(Board, self).__repr__()
         xc_range = range(min(xs), max(xs)+1)
         boardstr = ' ' + ''.join(map(lambda x: str(abs(x)), xc_range))
         boardstr += '\n'
@@ -47,6 +53,11 @@ class Board(object):
         self.xs.append(x)
         self.ss.append(s)
 
+    def replace(self, y, x, s):
+        """ Reset then placeall """
+        self.reset()
+        self.placeall(y, x, s)
+
     def pop(self, ind=-1):
         """ Removes the last-placed tile and returns y, x, s """
         return self.ys.pop(ind), self.xs.pop(ind), self.ss.pop(ind)
@@ -58,7 +69,7 @@ class Board(object):
 
     def check(self, line, coord, transpose=False, **kwargs):
         """
-        Return value of tile in line, along coord.
+        Find value of tile in line, along coord.
             (line, coord) = (y, x) if transpose=False
             (line, coord) = (x, y) if transpose=True
         kwargs:
@@ -95,9 +106,9 @@ class Board(object):
         """
         ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
         if transpose:
-            return ys, xs
-        else:
             return xs, ys
+        else:
+            return ys, xs
 
     def walk(self, line, coord, transpose=False, sgn=1, **kwargs):
         """
@@ -132,13 +143,13 @@ class Board(object):
 
     def occupied(self, line, transpose=False, **kwargs):
         """
-        Return occupied indices from row y=line (transpose=False)
+        Find occupied indices from row y=line (transpose=False)
         or column x=line (transpose=True)
         kwargs:
             board: tuple (ys (list), xs (list), ss (list)) for
                 specifying a custom board
         """
-        c, l = self.coord_line(transpose, **kwargs)
+        l, c = self.coord_line(transpose, **kwargs)
         return {c[i] for i, j in enumerate(l) if j == line}
 
     def find_anchors(self, line, transpose=False, **kwargs):

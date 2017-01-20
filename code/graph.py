@@ -70,11 +70,12 @@ class Node(object):
         else:
             return []
 
-    def walk(self, func=lambda x: x):
+    def walk(self, func=lambda x: x, args = ()):
         """ apply func to all descendents, return list """
         c, edges = self.children, sorted(self.children.keys())
-        return [func(self)] + reduce(lambda x, y: x + y,
-                                     [c[e].walk(func) for e in edges], [])
+        return [func(self, *args)] + reduce(lambda x, y: x + y,
+                                     [c[e].walk(func, *args) 
+                                      for e in edges], [])
 
     def downto(self, word):
         """ Return node corresponding to word or None """
@@ -198,7 +199,7 @@ if __name__ == "__main__":
     G = DirectedGraph()
 
     start = datetime.now()
-    G.parselex(w)  # [:800000])
+    G.parselex(w[:200000])
     print("Parsing took {}".format(datetime.now()-start))
 
     print("Nodes = {}".format(G.N))
