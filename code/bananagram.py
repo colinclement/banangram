@@ -169,6 +169,28 @@ class Bananagrams(object):
         pass
 
 
+    def placeword(self, line, coord, word, rack, board, transpose=False):
+        ys, xs, ss = board
+        xs, ys = self.board.coord_line(board=board, transpose=transpose)
+        altrack = [l for l in rack]
+        altys   = [y for y in ys]
+        altxs   = [x for x in xs]
+        altss   = [s for s in ss]
+
+        for i, l in enumerate(word):
+            c = self.board.check(line, coord+i, transpose=False,
+                                    board=(altys, altxs, altss))
+            if not c:
+                altrack.remove(l)
+                altys.append(line)
+                altxs.append(coord+i)
+                altss.append(l)
+
+        altxs, altys = self.board.coord_line(board=(altys, altxs, altss), transpose=transpose)
+
+        return (altys, altxs, altss), altrack
+    
+
 if __name__ == "__main__":
     anchor_cross = False
 
