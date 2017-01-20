@@ -195,6 +195,42 @@ class Bananagrams(object):
                 output.add((pos, w))
         return output
             
+    def updateboard(self, line, coord, word, board, rack, transpose=False):
+        """
+        Update board and rack with placed word.
+        input:
+            line: int, line along which word is placed
+            coord: int, coordinate along line upon which word is started
+            word: str, word to be placed
+            board: tuple (ys (list), xs (list), ss (list)), board to be
+                    updated
+            rack: list of str, letters in rack to be updated
+            transpose: True (line=y, coord=x)/False (line=x, coord=y)
+        returns:
+            board (tuple of lists, updated), rack (list of str, updated)
+            # NOTE: Returns copied updated board/rack
+        """
+        ys, xs, ss = board
+        ys, xs = self.board.coord_line(board=board, transpose=transpose)
+        # Copies!
+        altrack = [l for l in rack]
+        altys   = [y for y in ys]
+        altxs   = [x for x in xs]
+        altss   = [s for s in ss]
+
+        for i, l in enumerate(word):
+            c = self.board.check(line, coord+i, transpose=False,
+                                    board=(altys, altxs, altss))
+            if not c:
+                altrack.remove(l)
+                altys.append(line)
+                altxs.append(coord+i)
+                altss.append(l)
+
+        altys, altxs = self.board.coord_line(board=(altys, altxs, altss), 
+                                             transpose=transpose)
+        return (altys, altxs, altss), altrack
+
     def solve(self, rack, branch_limit = 10000):
         """
         Solve a bananagram! Only first found solution is returned
