@@ -24,6 +24,19 @@ class Bananagrams(object):
         """ Print the board """
         return self.board.show()
 
+    def allwords(self, rack):
+        def wordwalk(node, partial, rack):
+            results = []
+            if node.strset:
+                results += [partial]
+            for e in node.children:
+                if e in rack:
+                    rack.remove(e)
+                    results += flatten([wordwalk(node[e], partial+e, rack)])
+                    rack.append(e)
+            return results
+        return wordwalk(self.G.top, '', rack)
+
     def cross_check(self, line, coord, transpose=False, **kwargs):
         """
         When searching across (down), find compatible
