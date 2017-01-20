@@ -98,24 +98,24 @@ anchorat(0, 2, rack, board=b)  # passed
 # Test word option generation with preplaced prefix
 
 # Test word placement across
-print('Test across word placement: "read" at (y,x)=(1,1)')
-altboard, altrack = B.placeword(1, 1, 'read', rack, b)
+print('0: Test across word placement: "read" at (y,x)=(1,1)')
+altboard, altrack = B.updateboard(1, 1, 'read', b, rack)
 print(B.board.show(board=altboard))
 printrack(altrack)
 
 # Test word placement down
-print('Test down word placement: "neat" at (y,x)=(-1, 3)')
-altboard, altrack = B.placeword(3, -1, 'neat', rack, b, transpose=True)
+print('1: Test down word placement: "neat" at (y,x)=(-1, 3)')
+altboard, altrack = B.updateboard(3, -1, 'neat', b, rack, transpose=True)
 print(B.board.show(board=altboard))
 printrack(altrack)
 
 
-print('Test solution algorithm with solveable rack')
+print('2: Test solution algorithm with solveable rack')
 testrack = b[2]
 printrack(testrack)
 print(B.solve(testrack))
 
-print('Test solution algorith with unsolveable rack')
+print('3: Test solution algorith with unsolveable rack')
 testrack = b[2] + ['z']
 printrack(testrack)
 print(B.solve(testrack))
