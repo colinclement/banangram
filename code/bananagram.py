@@ -184,7 +184,7 @@ class Bananagrams(object):
 
     def placeword(self, line, coord, word, rack, board, transpose=False):
         ys, xs, ss = board
-        xs, ys = self.board.coord_line(board=board, transpose=transpose)
+        ys, xs = self.board.coord_line(board=board, transpose=transpose)
         altrack = [l for l in rack]
         altys   = [y for y in ys]
         altxs   = [x for x in xs]
@@ -199,7 +199,7 @@ class Bananagrams(object):
                 altxs.append(coord+i)
                 altss.append(l)
 
-        altxs, altys = self.board.coord_line(board=(altys, altxs, altss), transpose=transpose)
+        altys, altxs = self.board.coord_line(board=(altys, altxs, altss), transpose=transpose)
 
         return (altys, altxs, altss), altrack
     
