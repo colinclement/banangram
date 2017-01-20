@@ -75,6 +75,10 @@ def anchorat(line, coord, rack, transpose=False, **kwargs):
                                            rack, transpose,
                                            **kwargs))))
 
+def printrack(rack):
+    print('Rack contains: [' + ', '.join(rack) + ']')
+
+printrack(rack)
 anchorat(0, 2, rack, board=b)  # passed 
 anchorat(1, 2, rack, board=b)  # passed
 anchorat(1, 1, rack, True, board=b)  # passed
@@ -87,6 +91,7 @@ for l in 'rad':
 
 print(B.board.show(board=b))
 #
+printrack(rack)
 anchorat(1, 2, rack, board=b)  # passed
 anchorat(1, 0, rack, board=b)  # passed 
 anchorat(0, 2, rack, board=b)  # passed
