@@ -97,5 +97,15 @@ anchorat(1, 0, rack, board=b)  # passed
 anchorat(0, 2, rack, board=b)  # passed
 # Test word option generation with preplaced prefix
 
+# Test word placement across
+print('Test across word placement')
+altboard, altrack = B.placeword(1, 1, 'read', rack, b)
+print(B.board.show(board=altboard))
+printrack(altrack)
 
+# Test word placement down
+print('Test down word placement')
+altboard, altrack = B.placeword(3, -1, 'teat', rack, b, transpose=True)
+print(B.board.show(board=altboard))
+printrack(altrack)
 
