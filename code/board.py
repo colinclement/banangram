@@ -14,6 +14,10 @@ from collections import defaultdict
 class Board(object):
     """ Representation of a Bananagram board """
     def __init__(self):
+        self.reset()
+
+    def reset(self):
+        """ Empty board """
         self.ys = []  # integers of occupied sites y-coords
         self.xs = []  # integers of occupied sites x-coords
         self.ss = []  # list of str at corresponding y, x
@@ -21,6 +25,8 @@ class Board(object):
     def show(self, **kwargs):
         """ Pretty print the board! Coords are abs """
         ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
+        if not ys:
+            return super(Board, self).__repr__()
         xc_range = range(min(xs), max(xs)+1)
         boardstr = ' ' + ''.join(map(lambda x: str(abs(x)), xc_range))
         boardstr += '\n'
@@ -46,6 +52,11 @@ class Board(object):
         self.ys.append(y)
         self.xs.append(x)
         self.ss.append(s)
+
+    def replace(self, y, x, s):
+        """ Reset then placeall """
+        self.reset()
+        self.placeall(y, x, s)
 
     def pop(self, ind=-1):
         """ Removes the last-placed tile and returns y, x, s """
