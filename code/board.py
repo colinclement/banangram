@@ -58,7 +58,7 @@ class Board(object):
 
     def check(self, line, coord, transpose=False, **kwargs):
         """
-        Return value of tile in line, along coord.
+        Find value of tile in line, along coord.
             (line, coord) = (y, x) if transpose=False
             (line, coord) = (x, y) if transpose=True
         kwargs:
@@ -132,7 +132,7 @@ class Board(object):
 
     def occupied(self, line, transpose=False, **kwargs):
         """
-        Return occupied indices from row y=line (transpose=False)
+        Find occupied indices from row y=line (transpose=False)
         or column x=line (transpose=True)
         kwargs:
             board: tuple (ys (list), xs (list), ss (list)) for
