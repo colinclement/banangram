@@ -157,7 +157,11 @@ class Bananagrams(object):
 
         if prefix:
             pos = anchor - len(prefix)
-            return [(pos, right(prefix, self.G.downto(prefix), anchor, rack))]
+            # Results using the alread-placed left part
+            results =  [(pos, right(prefix, self.G.downto(prefix), anchor, rack))]
+            # Results going right from anchor
+            results += left('', self.G.top, rack, 0)
+            return results
         else:
             return left('', self.G.top, rack, maxlen)
 
