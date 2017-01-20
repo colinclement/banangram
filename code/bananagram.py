@@ -24,7 +24,14 @@ class Bananagrams(object):
         """ Print the board """
         return self.board.show()
 
-    def allwords(self, rack):
+    def anagrams(self, rack):
+        """
+        Return all words that can be formed with letters in rack
+        input:
+            rack: list of str, available characters
+        return:
+            sorted list of words that can be formed from rack
+        """
         def wordwalk(node, partial, rack):
             results = []
             if node.strset:
@@ -35,7 +42,7 @@ class Bananagrams(object):
                     results += flatten([wordwalk(node[e], partial+e, rack)])
                     rack.append(e)
             return results
-        return wordwalk(self.G.top, '', rack)
+        return sorted(wordwalk(self.G.top, '', rack))
 
     def cross_check(self, line, coord, transpose=False, **kwargs):
         """
@@ -114,7 +121,7 @@ class Bananagrams(object):
                         (should basically always start at an anchor)
                 rack: list of str, characters used to build words
             returns:
-                list of possible words satisfying board and lexicon constraints
+                set of possible words satisfying board and lexicon constraints
             """
             l = self.board.check(line, coord, transpose, **kwargs)
             results = []
@@ -174,13 +181,73 @@ class Bananagrams(object):
             results =  [(pos, right(prefix, self.G.downto(prefix), anchor, rack))]
             # Results going right from anchor
             results += left('', self.G.top, rack, 0)
-            return results
         else:
-            return left('', self.G.top, rack, maxlen)
+            results = set(left('', self.G.top, rack, maxlen))
 
-    def consume(self, tiles):
-        pass
+        output = set([])
+        for pos, words in results:
+            for w in words:
+                output.add((pos, w))
+        return output
+            
+    def solve(self, rack, branch_limit = 10000):
+        """
+        Solve a bananagram! Only first found solution is returned
+        input:
+            rack: list of str, letters that we can use
+            branch_limit: int, limit on backtrack graph width
+                    (default of 10000)
+        """
+        firstwords = self.anagrams(rack)
+        racks, boards = [], []
+        for w in firstwords:
+            tmprack = [s for s in rack]
+            for l in w:
+                tmprack.remove(l)
+            racks += [tmprack]
+            ys = [0 for i in range(len(w))]
+            xs = range(len(w))
+            ss = [s for s in w]
+            boards += [(ys, xs, ss)]
 
+        solution = ()
+        branches = 0
+
+        def backtrack(board, rack):
+            branches += 1
+            ys, xs, ss = board
+            ymin, ymax, xmin, xmax = min(ys), max(ys), min(xs), max(xs)
+            if not rack:  # DONE!
+                solution = board
+
+            if not solution and branches < branch_limit:
+                # Across moves
+                for y in range(ymin, ymax+1):
+                    cross = self.board.cross_checks(y, board=board)
+                    anchors = self.board.find_anchors(y, board=board)
+                    for a in anchors:
+                        wlist = self.get_words(y, a, rack, cross, 
+                                               board=board)
+                        for p, word in wlist:
+                            nxtb, nxtr = self.placewords(y, p, word, board,
+                                                         rack)
+                            backtrack(nxtb, nxtr)
+                # Down moves
+                for x in range(xmin, xmax+1):
+                    cross = self.board.cross_checks(x, True, board=board)
+                    anchors = self.board.find_anchors(x, True, board=board)
+                    for a in anchors:
+                        wlist = self.get_words(x, a, rack, cross, 
+                                               board=board)
+                        for p, word in wlist:
+                            nxtb, nxtr = self.placewords(x, p, word, board,
+                                                         rack, True)
+                            backtrack(nxtb, nxtr)
+
+        [backtrack(b, r) for b, r in zip(boards, racks)]
+        if solution:
+            self.board.placeall(*solution)
+            
 
 if __name__ == "__main__":
     anchor_cross = False
