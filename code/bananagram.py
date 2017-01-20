@@ -70,7 +70,9 @@ class Bananagrams(object):
         prefix = self.board.walk(coord, line-1, not transpose, -1, **kwargs)
         suffix = self.board.walk(coord, line+1, not transpose, +1, **kwargs)
         node = self.G.downto(prefix)
-        if suffix and node.children:
+        if not node:  # No edges from prefix
+            return []
+        elif suffix and node.children:
             allowed = []
             for edge in node.children:
                 n = node.children[edge].downto(suffix)
@@ -140,8 +142,9 @@ class Bananagrams(object):
 
                     if e in allowed:
                         rack.remove(e)
-                        results += flatten([right(partial+e, node[e],
-                                                  coord+1, rack)])
+                        if node[e]:
+                            results += flatten([right(partial+e, node[e],
+                                                      coord+1, rack)])
                         rack.append(e)
                 return results
             
@@ -158,7 +161,7 @@ class Bananagrams(object):
                 list of tuples in format described in get_words docstring
             """
             pos = anchor - (maxlen - limit) + 1 
-            complete = right(partial, node, anchor+1, rack)
+            complete = right(partial, node, anchor+1, rack) if node else []
             results = []
             if complete:
                 results = [(pos, complete)]
@@ -175,14 +178,16 @@ class Bananagrams(object):
                         rack.append(e)
             return results
 
-        if prefix:
+        if prefix:  # Results using the alread-placed left part
             pos = anchor - len(prefix)
-            # Results using the alread-placed left part
-            results =  [(pos, right(prefix, self.G.downto(prefix), anchor, rack))]
+            results = []
+            node = self.G.downto(prefix)
+            if node:
+                results = [(pos, right(prefix, node, anchor, rack))]
             # Results going right from anchor
             results += left('', self.G.top, rack, 0)
         else:
-            results = set(left('', self.G.top, rack, maxlen))
+            results = left('', self.G.top, rack, maxlen)
 
         output = set([])
         for pos, words in results:
