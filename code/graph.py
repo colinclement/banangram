@@ -199,7 +199,7 @@ if __name__ == "__main__":
     G = DirectedGraph()
 
     start = datetime.now()
-    G.parselex(w[:200000])
+    G.parselex(w)  # [:200000])
     print("Parsing took {}".format(datetime.now()-start))
 
     print("Nodes = {}".format(G.N))
