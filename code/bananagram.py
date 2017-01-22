@@ -108,7 +108,7 @@ class Bananagrams(object):
         cross = {c: self.cross_check(line, c, transpose, **kwargs) 
                  for c in checks}
         maxlen = min([len(rack)]+[anchor - o - 1 for o in occ 
-                                    if anchor - o > 0])
+                                  if anchor - o > 0])
         prefix = self.board.walk(line, anchor-1, transpose, -1, **kwargs)
 
         def right(partial, node, coord, rack):
@@ -133,7 +133,7 @@ class Bananagrams(object):
                                               coord+1, rack)])
                 return results
             else:  # If tile is unoccupied, try filling it
-                if node.strset:
+                if node.strset:  # LEGAL MOVE
                     results += [partial]
                 for e in node.children:
                     allowed = set(rack)
@@ -168,17 +168,24 @@ class Bananagrams(object):
             if limit > 0:
                 for e in node.children:
                     allowed = set(rack)
-                    if pos-1 in cross:
-                        allowed.intersection_update(cross[pos-1])
+                    cont = True  # Check that translated partial is legal
+                    for i, c in enumerate(partial):
+                        if pos+i in cross:
+                            if not c in cross[pos+i]:
+                                cont = False
 
-                    if e in allowed: 
+                    if anchor in cross:  # Always adding tile to anchor 
+                        allowed.intersection_update(cross[anchor])
+
+                    if e in allowed and cont: 
                         rack.remove(e)
+                        # Move partial left 1, adding e at anchor
                         results += flatten([left(partial+e, node[e],
                                                  rack, limit-1)])
                         rack.append(e)
             return results
 
-        if prefix:  # Results using the alread-placed left part
+        if prefix:  # Results using the already-placed left part
             pos = anchor - len(prefix)
             results = []
             node = self.G.downto(prefix)
@@ -231,7 +238,7 @@ class Bananagrams(object):
                                              transpose=transpose)
         return (altys, altxs, altss), altrack
 
-    def solve(self, rack, branch_limit = 10000):
+    def solve(self, rack, branch_limit = 30000):
         """
         Solve a bananagram! Only first found solution is returned
         input:
@@ -248,11 +255,14 @@ class Bananagrams(object):
         self._branches = 0
 
         def backtrack(board, rack):
+            """
+            Backtracking algorithm for searching for words
+            """
             self._branches += 1
             ys, xs, ss = board
             ymin, ymax, xmin, xmax = min(ys), max(ys), min(xs), max(xs)
 
-            if not rack:  # DONE!
+            if len(rack) == 0:  # DONE!
                 self._solution = board
 
             if not self._solution and self._branches < branch_limit:
@@ -268,6 +278,7 @@ class Bananagrams(object):
                                                           rack, True)
                             if nxtr != rack:  # only call again if playable!
                                 backtrack(nxtb, nxtr)
+            if not self._solution and self._branches < branch_limit:
                 # Across moves
                 for y in range(ymin, ymax+1):
                     cross = self.board.cross_checks(y, board=board)
@@ -281,7 +292,10 @@ class Bananagrams(object):
                             if nxtr != rack:  # only call again if playable!
                                 backtrack(nxtb, nxtr)
 
-        [backtrack(b, r) for b, r in boards_racks]
+        # Consider sorting boards_racks by word length, starting with longest
+        for b, r in boards_racks:
+            if not self._solution and self._branches < branch_limit:
+                backtrack(b, r)
         if self._solution:
             self.board.placeall(*self._solution)
         return self._solution
