@@ -1,3 +1,35 @@
+# Solve for Bananagram tree with any lexicon and set of tiles
+
+## Usage:
+
+```python
+from graph import DirectedGraph, trie_to_dawg
+from bananagram import Bananagrams
+
+lexicon = open('data/sowpods.txt', 'r').read()
+G = DirectedGraph()
+G.parselex(lexicon)  # build prefix trie
+trie_to_dawg(G)  # reduce graph by merging suffixes
+
+B = Bananagrams(G)
+
+#  Available tiles
+rack = [s for s in 'lbwnytkmexroatiliaape']
+sol = B.solve(rack)
+
+B.show(sol)  # Print solution!
+>>> 3210123
+    2  P
+    1 MIB
+    0TI AA
+    1 R LAWN
+    2 Y L
+    3   O
+    4   T
+    5   E
+    6  KEX
+```
+
 The rules are simple:
     Randomly collect N letter tiles
     Use all N letters to make a Scrabble-like grid of words.
@@ -7,14 +39,7 @@ Sub-questions:
     1) As N increases, how does likelihood of solution change? Where does the change occur?
     2) How does the behavior depend on the distribution of letters grabbable?
 
-Alemi's suggestion:
-    Just do a depth first search of playable words and locs
-    Use a DAWG (directed, acyclic graph)
-    And for more options heuristically push the search to 'words' that themselves are subwords of more worda
-    
-GADDAG is likely a faster data structure, but takes up more space, also built to solve board constraints not present in Bangrams.
-
-
 ## Sources:
+  * Thanks to Alex Alemi for suggesting directed acyclic words graphs (DAWG)
   * Appel and Jacobsen (1986) "The World's Fastest Scrabble Program"
   * http://stevehanov.ca/blog/index.php?id=115
