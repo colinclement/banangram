@@ -14,6 +14,9 @@ from board import Board
 def flatten(lst):
     return reduce(lambda x, y: x + y, lst, [])
 
+def argsort(lst, **kwargs):
+    return sorted(range(len(lst)), key=lst.__getitem__, **kwargs)
+
 
 class Bananagrams(object):
     def __init__(self, dawg, **kwargs):
@@ -272,8 +275,12 @@ class Bananagrams(object):
             board: tuple of lists (ys, xs, ss), Solution!. If no solution
                     found, empty tuple is returned.
         """
-        boards_racks = [self.updateboard(0, 0, w, ([],[],[]), rack)
-                        for w in self.firstwords(rack)]
+        firstw = self.firstwords(rack)  # order first words by descending len
+        #len_ord = argsort(map(len, firstw), reverse=True)
+        boards_racks = [self.updateboard(0, 0, firstw[i], ([], [], []), rack) 
+                        for i in argsort(map(len, firstw), reverse=True)]
+        #boards_racks = [self.updateboard(0, 0, w, ([],[],[]), rack)
+        #                for w in self.firstwords(rack)]
         self._solution = ()
         self._branches = 0
 
