@@ -157,19 +157,17 @@ class Bananagrams(object):
                                               coord+1, rack)])
                 return results
             else:  # If tile is unoccupied, try filling it
-                if node.strset:  # LEGAL MOVE
+                if node.strset:
                     results += [partial]
-                for e in node.children:
-                    allowed = set(rack)
-                    if coord in cross:
-                        allowed.intersection_update(cross[coord])
-
-                    if e in allowed:
-                        rack.remove(e)
-                        if node[e]:
-                            results += flatten([right(partial+e, node[e],
-                                                      coord+1, rack)])
-                        rack.append(e)
+                allowed = set(rack)
+                if coord in cross:
+                    allowed.intersection_update(cross[coord])
+                for e in allowed.intersection(node.children):
+                    rack.remove(e)
+                    if node[e]:
+                        results += flatten([right(partial+e, node[e],
+                                                  coord+1, rack)])
+                    rack.append(e)
                 return results
             
         def left(partial, node, rack, limit):
@@ -190,20 +188,18 @@ class Bananagrams(object):
             if complete:
                 results = [(pos, complete)]
             if limit > 0:
-                for e in node.children:
+                proceed = True  # Check that translated partial is legal
+                for i, c in enumerate(partial):
+                    if pos+i in cross:
+                        if not c in cross[pos+i]:
+                            proceed = False
+                if proceed:
                     allowed = set(rack)
-                    cont = True  # Check that translated partial is legal
-                    for i, c in enumerate(partial):
-                        if pos+i in cross:
-                            if not c in cross[pos+i]:
-                                cont = False
-
                     if anchor in cross:  # Always adding tile to anchor 
                         allowed.intersection_update(cross[anchor])
-
-                    if e in allowed and cont: 
+                    for e in allowed.intersection(node.children):
                         rack.remove(e)
-                        # Move partial left 1, adding e at anchor
+                        # Move partial left 1, adding edge at anchor
                         results += flatten([left(partial+e, node[e],
                                                  rack, limit-1)])
                         rack.append(e)
