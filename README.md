@@ -18,16 +18,18 @@ rack = [s for s in 'lbwnytkmexroatiliaape']
 sol = B.solve(rack)
 
 B.show(sol)  # Print solution!
->>> 3210123
-    2  P
-    1 MIB
-    0TI AA
-    1 R LAWN
-    2 Y L
-    3   O
-    4   T
-    5   E
-    6  KEX
+""" Outputs:
+3210123
+2  P
+1 MIB
+0TI AA
+1 R LAWN
+2 Y L
+3   O
+4   T
+5   E
+6  KEX
+"""
 ```
 
 The rules are simple:
