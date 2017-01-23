@@ -44,6 +44,30 @@ class Bananagrams(object):
             return results
         return sorted(wordwalk(self.G.top, '', rack))
 
+    def firstwords(self, rack):
+        """
+        Using characters from a rack, returns all words modulo unique 
+        prefixes. I.e. the graph is walked using all paths consistent with the
+        rack, but only the first terminal node of each path is returned as solve
+        will explore the suffixes. 
+        input:
+            rack: list of str, available characters
+        return:
+            sorted list of words that can be formed modulo unique prefix.
+        """
+        def firstwalk(node, partial, rack):
+            results = []
+            if node.strset:
+                results += [partial]
+            else:
+                for e in node.children:
+                    if e in rack:
+                        rack.remove(e)
+                        results += flatten([firstwalk(node[e], partial+e, rack)])
+                        rack.append(e)
+            return results
+        return sorted(firstwalk(self.G.top, '', rack))
+
     def cross_check(self, line, coord, transpose=False, **kwargs):
         """
         When searching across (down), find compatible
@@ -244,13 +268,13 @@ class Bananagrams(object):
         input:
             rack: list of str, letters that we can use
             branch_limit: int, limit on backtrack graph width
-                    (default of 10000)
+                    (default of 30000)
         returns:
             board: tuple of lists (ys, xs, ss), Solution!. If no solution
                     found, empty tuple is returned.
         """
         boards_racks = [self.updateboard(0, 0, w, ([],[],[]), rack)
-                        for w in self.anagrams(rack)]
+                        for w in self.firstwords(rack)]
         self._solution = ()
         self._branches = 0
 
