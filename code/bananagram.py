@@ -319,7 +319,40 @@ class Bananagrams(object):
         if self._solution:
             self.board.placeall(*self._solution)
         return self._solution
- 
+
+    def validate(self, board):
+        """
+        Check if board is a valid solution given the lexicon of self.G.
+        Find all contiguous lines of tiles longer than one and compare
+        to the lexicon.
+        input:
+            board: tuple of lists (ys, xs, ss)
+        returns:
+            board is a solution (True/False), list of words on board
+        """
+        ys, xs, ss = board
+        ymin, ymax, xmin, xmax = min(ys), max(ys), min(xs), max(xs)
+        # Check down words
+        words, solution = [], True
+        for x in range(xmin, xmax+1):
+            anchors = self.board.find_anchors(x, True, board=board)
+            for a in anchors:
+                w = self.board.walk(x, a+1, True, 1, board=board)
+                if len(w) > 1:
+                    words += [w]
+                    if not self.G.top.downto(w).strset:
+                        solution = False
+        # Check across words
+        for y in range(ymin, ymax+1):
+            anchors = self.board.find_anchors(y, board=board) 
+            for a in anchors:
+                w = self.board.walk(y, a+1, False, 1, board=board)
+                if len(w) > 1:
+                    words += [w]
+                    if not self.G.top.downto(w).strset:
+                        solution = False
+        return solution, words
+
 
 if __name__ == "__main__":
     anchor_cross = False
