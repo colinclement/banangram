@@ -24,6 +24,9 @@ class Bananagrams(object):
         """ Print the board """
         return self.board.show()
 
+    def show(self, board):
+        print(self.board.show(board=board))
+
     def anagrams(self, rack):
         """
         Return all words that can be formed with letters in rack
@@ -43,6 +46,30 @@ class Bananagrams(object):
                     rack.append(e)
             return results
         return sorted(wordwalk(self.G.top, '', rack))
+
+    def firstwords(self, rack):
+        """
+        Using characters from a rack, returns all words modulo unique 
+        prefixes. I.e. the graph is walked using all paths consistent with the
+        rack, but only the first terminal node of each path is returned as solve
+        will explore the suffixes. 
+        input:
+            rack: list of str, available characters
+        return:
+            sorted list of words that can be formed modulo unique prefix.
+        """
+        def firstwalk(node, partial, rack):
+            results = []
+            if node.strset:
+                results += [partial]
+            else:
+                for e in node.children:
+                    if e in rack:
+                        rack.remove(e)
+                        results += flatten([firstwalk(node[e], partial+e, rack)])
+                        rack.append(e)
+            return results
+        return sorted(firstwalk(self.G.top, '', rack))
 
     def cross_check(self, line, coord, transpose=False, **kwargs):
         """
@@ -108,7 +135,7 @@ class Bananagrams(object):
         cross = {c: self.cross_check(line, c, transpose, **kwargs) 
                  for c in checks}
         maxlen = min([len(rack)]+[anchor - o - 1 for o in occ 
-                                    if anchor - o > 0])
+                                  if anchor - o > 0])
         prefix = self.board.walk(line, anchor-1, transpose, -1, **kwargs)
 
         def right(partial, node, coord, rack):
@@ -135,17 +162,15 @@ class Bananagrams(object):
             else:  # If tile is unoccupied, try filling it
                 if node.strset:
                     results += [partial]
-                for e in node.children:
-                    allowed = set(rack)
-                    if coord in cross:
-                        allowed.intersection_update(cross[coord])
-
-                    if e in allowed:
-                        rack.remove(e)
-                        if node[e]:
-                            results += flatten([right(partial+e, node[e],
-                                                      coord+1, rack)])
-                        rack.append(e)
+                allowed = set(rack)
+                if coord in cross:
+                    allowed.intersection_update(cross[coord])
+                for e in allowed.intersection(node.children):
+                    rack.remove(e)
+                    if node[e]:
+                        results += flatten([right(partial+e, node[e],
+                                                  coord+1, rack)])
+                    rack.append(e)
                 return results
             
         def left(partial, node, rack, limit):
@@ -166,19 +191,24 @@ class Bananagrams(object):
             if complete:
                 results = [(pos, complete)]
             if limit > 0:
-                for e in node.children:
+                proceed = True  # Check that translated partial is legal
+                for i, c in enumerate(partial):
+                    if pos+i in cross:
+                        if not c in cross[pos+i]:
+                            proceed = False
+                if proceed:
                     allowed = set(rack)
-                    if pos-1 in cross:
-                        allowed.intersection_update(cross[pos-1])
-
-                    if e in allowed: 
+                    if anchor in cross:  # Always adding tile to anchor 
+                        allowed.intersection_update(cross[anchor])
+                    for e in allowed.intersection(node.children):
                         rack.remove(e)
+                        # Move partial left 1, adding edge at anchor
                         results += flatten([left(partial+e, node[e],
                                                  rack, limit-1)])
                         rack.append(e)
             return results
 
-        if prefix:  # Results using the alread-placed left part
+        if prefix:  # Results using the already-placed left part
             pos = anchor - len(prefix)
             results = []
             node = self.G.downto(prefix)
@@ -231,28 +261,31 @@ class Bananagrams(object):
                                              transpose=transpose)
         return (altys, altxs, altss), altrack
 
-    def solve(self, rack, branch_limit = 10000):
+    def solve(self, rack, branch_limit = 30000):
         """
         Solve a bananagram! Only first found solution is returned
         input:
             rack: list of str, letters that we can use
             branch_limit: int, limit on backtrack graph width
-                    (default of 10000)
+                    (default of 30000)
         returns:
             board: tuple of lists (ys, xs, ss), Solution!. If no solution
                     found, empty tuple is returned.
         """
         boards_racks = [self.updateboard(0, 0, w, ([],[],[]), rack)
-                        for w in self.anagrams(rack)]
+                        for w in self.firstwords(rack)]
         self._solution = ()
         self._branches = 0
 
         def backtrack(board, rack):
+            """
+            Backtracking algorithm for searching for words
+            """
             self._branches += 1
             ys, xs, ss = board
             ymin, ymax, xmin, xmax = min(ys), max(ys), min(xs), max(xs)
 
-            if not rack:  # DONE!
+            if len(rack) == 0:  # DONE!
                 self._solution = board
 
             if not self._solution and self._branches < branch_limit:
@@ -268,6 +301,7 @@ class Bananagrams(object):
                                                           rack, True)
                             if nxtr != rack:  # only call again if playable!
                                 backtrack(nxtb, nxtr)
+            if not self._solution and self._branches < branch_limit:
                 # Across moves
                 for y in range(ymin, ymax+1):
                     cross = self.board.cross_checks(y, board=board)
@@ -281,11 +315,47 @@ class Bananagrams(object):
                             if nxtr != rack:  # only call again if playable!
                                 backtrack(nxtb, nxtr)
 
-        [backtrack(b, r) for b, r in boards_racks]
+        # Consider sorting boards_racks by word length, starting with longest
+        for b, r in boards_racks:
+            if not self._solution and self._branches < branch_limit:
+                backtrack(b, r)
         if self._solution:
             self.board.placeall(*self._solution)
         return self._solution
- 
+
+    def validate(self, board):
+        """
+        Check if board is a valid solution given the lexicon of self.G.
+        Find all contiguous lines of tiles longer than one and compare
+        to the lexicon.
+        input:
+            board: tuple of lists (ys, xs, ss)
+        returns:
+            board is a solution (True/False), list of words on board
+        """
+        ys, xs, ss = board
+        ymin, ymax, xmin, xmax = min(ys), max(ys), min(xs), max(xs)
+        # Check down words
+        words, solution = [], True
+        for x in range(xmin, xmax+1):
+            anchors = self.board.find_anchors(x, True, board=board)
+            for a in anchors:
+                w = self.board.walk(x, a+1, True, 1, board=board)
+                if len(w) > 1:
+                    words += [w]
+                    if not self.G.top.downto(w).strset:
+                        solution = False
+        # Check across words
+        for y in range(ymin, ymax+1):
+            anchors = self.board.find_anchors(y, board=board) 
+            for a in anchors:
+                w = self.board.walk(y, a+1, False, 1, board=board)
+                if len(w) > 1:
+                    words += [w]
+                    if not self.G.top.downto(w).strset:
+                        solution = False
+        return solution, words
+
 
 if __name__ == "__main__":
     anchor_cross = False
