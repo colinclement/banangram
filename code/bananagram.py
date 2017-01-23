@@ -24,6 +24,9 @@ class Bananagrams(object):
         """ Print the board """
         return self.board.show()
 
+    def show(self, board):
+        print(self.board.show(board=board))
+
     def anagrams(self, rack):
         """
         Return all words that can be formed with letters in rack
