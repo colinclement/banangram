@@ -11,34 +11,34 @@ from __future__ import division
 import random
 
 
-BANNUMDICT = {'A':13, 
-              'B':3, 
-              'C':3, 
-              'D':6, 
-              'E':18, 
-              'F':3, 
-              'G':4, 
-              'H':3, 
-              'I':12, 
-              'J':2, 
-              'K':2,
-              'L':5, 
-              'M':3, 
-              'N':8, 
-              'O':11,
-              'P':3, 
-              'Q':2, 
-              'R':9, 
-              'S':6, 
-              'T':9, 
-              'U':6, 
-              'V':3, 
-              'W':3, 
-              'X':2, 
-              'Y':3, 
-              'Z':2}
+BANNUMDICT = {'a':13, 
+              'b':3, 
+              'c':3, 
+              'd':6, 
+              'e':18, 
+              'f':3, 
+              'g':4, 
+              'h':3, 
+              'i':12, 
+              'j':2, 
+              'k':2,
+              'l':5, 
+              'm':3, 
+              'n':8, 
+              'o':11,
+              'p':3, 
+              'q':2, 
+              'r':9, 
+              's':6, 
+              't':9, 
+              'u':6, 
+              'v':3, 
+              'w':3, 
+              'x':2, 
+              'y':3, 
+              'z':2}
 
-ALPH = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+ALPH = 'abcdefghijklmnopqrstuvwxyz'
 
 numlist = [BANNUMDICT[l] for l in ALPH]
 
