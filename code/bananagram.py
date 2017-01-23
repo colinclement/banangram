@@ -186,17 +186,17 @@ class Bananagrams(object):
                 list of tuples in format described in get_words docstring
             """
             pos = anchor - (maxlen - limit) + 1 
-            complete = right(partial, node, anchor+1, rack) if node else []
             results = []
-            if complete:
-                results = [(pos, complete)]
-            if limit > 0:
-                proceed = True  # Check that translated partial is legal
-                for i, c in enumerate(partial):
-                    if pos+i in cross:
-                        if not c in cross[pos+i]:
-                            proceed = False
-                if proceed:
+            proceed = True  # Check that translated partial is legal
+            for i, c in enumerate(partial):
+                if pos+i in cross:
+                    if not c in cross[pos+i]:
+                        proceed = False
+            if proceed:
+                complete = right(partial, node, anchor+1, rack) if node else []
+                if complete:
+                    results = [(pos, complete)]
+                if limit > 0:
                     allowed = set(rack)
                     if anchor in cross:  # Always adding tile to anchor 
                         allowed.intersection_update(cross[anchor])
@@ -251,7 +251,7 @@ class Bananagrams(object):
         for i, l in enumerate(word):
             c = self.board.check(line, coord+i, transpose=False,
                                     board=(altys, altxs, altss))
-            if not c:
+            if not c:  # Play tile if spot is empty
                 altrack.remove(l)
                 altys.append(line)
                 altxs.append(coord+i)
@@ -261,13 +261,13 @@ class Bananagrams(object):
                                              transpose=transpose)
         return (altys, altxs, altss), altrack
 
-    def solve(self, rack, branch_limit = 30000):
+    def solve(self, rack, branch_limit = 100000):
         """
         Solve a bananagram! Only first found solution is returned
         input:
             rack: list of str, letters that we can use
             branch_limit: int, limit on backtrack graph width
-                    (default of 30000)
+                    (default of 100000)
         returns:
             board: tuple of lists (ys, xs, ss), Solution!. If no solution
                     found, empty tuple is returned.
@@ -343,7 +343,11 @@ class Bananagrams(object):
                 w = self.board.walk(x, a+1, True, 1, board=board)
                 if len(w) > 1:
                     words += [w]
-                    if not self.G.top.downto(w).strset:
+                    node = self.G.top.downto(w)
+                    if node:
+                        if not self.G.top.downto(w).strset:
+                            solution = False
+                    else:
                         solution = False
         # Check across words
         for y in range(ymin, ymax+1):
@@ -352,7 +356,11 @@ class Bananagrams(object):
                 w = self.board.walk(y, a+1, False, 1, board=board)
                 if len(w) > 1:
                     words += [w]
-                    if not self.G.top.downto(w).strset:
+                    node = self.G.top.downto(w)
+                    if node:
+                        if not self.G.top.downto(w).strset:
+                            solution = False
+                    else:
                         solution = False
         return solution, words
 
