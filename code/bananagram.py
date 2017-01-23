@@ -186,17 +186,17 @@ class Bananagrams(object):
                 list of tuples in format described in get_words docstring
             """
             pos = anchor - (maxlen - limit) + 1 
-            complete = right(partial, node, anchor+1, rack) if node else []
             results = []
-            if complete:
-                results = [(pos, complete)]
-            if limit > 0:
-                proceed = True  # Check that translated partial is legal
-                for i, c in enumerate(partial):
-                    if pos+i in cross:
-                        if not c in cross[pos+i]:
-                            proceed = False
-                if proceed:
+            proceed = True  # Check that translated partial is legal
+            for i, c in enumerate(partial):
+                if pos+i in cross:
+                    if not c in cross[pos+i]:
+                        proceed = False
+            if proceed:
+                complete = right(partial, node, anchor+1, rack) if node else []
+                if complete:
+                    results = [(pos, complete)]
+                if limit > 0:
                     allowed = set(rack)
                     if anchor in cross:  # Always adding tile to anchor 
                         allowed.intersection_update(cross[anchor])
@@ -251,7 +251,7 @@ class Bananagrams(object):
         for i, l in enumerate(word):
             c = self.board.check(line, coord+i, transpose=False,
                                     board=(altys, altxs, altss))
-            if not c:
+            if not c:  # Play tile if spot is empty
                 altrack.remove(l)
                 altys.append(line)
                 altxs.append(coord+i)
