@@ -1,4 +1,4 @@
-# Solve for Bananagram tree with any lexicon and set of tiles
+# Solve Bananagrams with any lexicon and set of tiles
 
 ## Usage:
 
@@ -31,15 +31,17 @@ B.show(sol)  # Print solution!
 6  KEX
 """
 ```
+## Bananagrams:
 
-The rules are simple:
-    Randomly collect N letter tiles
-    Use all N letters to make a Scrabble-like grid of words.
-    If no solution exists, grab more tiles
-The Question: for N randomly grabbed letters, how likely is it that a solution exist?
-Sub-questions: 
-    1) As N increases, how does likelihood of solution change? Where does the change occur?
-    2) How does the behavior depend on the distribution of letters grabbable?
+## The rules are simple:
+Randomly collect N letter tiles
+Use all N letters to make a Scrabble-like grid of words.
+If no solution exists, grab more tiles
+
+## The Question: for N randomly grabbed letters, how likely is it that a solution exist?
+### Sub-questions: 
+1. As N increases, how does likelihood of solution change? Where does the change occur?
+2. How does the behavior depend on the distribution of letters grabbable?
 
 ## Sources:
   * Thanks to Alex Alemi for suggesting directed acyclic words graphs (DAWG)
