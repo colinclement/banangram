@@ -9,6 +9,11 @@ Representation of a Bananagrams board, an unbounded square lattice
 """
 
 from collections import defaultdict
+try:
+    from scipy.weave import inline
+    has_scipy = True
+except ImportError as ierr:
+    has_scipy = False
 
 
 class Board(object):
@@ -77,24 +82,15 @@ class Board(object):
                 specifying a custom board
         """
         ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
-        s = None
         if transpose:
             y, x = coord, line
         else:
             x, y = coord, line
-        y0, x0 = 0, 0
-        while not s:
-            try:
-                iy = ys.index(y, y0, len(ys))
-                ix = xs.index(x, x0, len(xs))
-            except ValueError as verr:
-                return ''
-            if iy == ix:
-                s = ss[iy]
-            else:
-                y0 = max(iy, ix)
-                x0 = y0
-        return s
+        ind = check(ys, xs, y, x)  # returns index of line, coord
+        if ind < 0:
+            return ''
+        else:
+            return ss[ind]
 
     def coord_line(self, transpose=False, **kwargs):
         """
@@ -188,6 +184,31 @@ class Board(object):
         down = self.occupied(line + 1, transpose, **kwargs)
         return (up.union(down)).difference(occupied)
 
+
+if has_scipy:
+    def check(ys, xs, y, x):
+        """ Returns index where ys[i]==y, xs[i]==x """
+        assert len(ys) == len(xs)
+        assert len(xs) == len(ys)
+        assert isinstance(y, int)
+        assert isinstance(x, int)
+        code = r"""
+        return_val = -1;
+        for (int i = 0; i < ys.length(); i++){
+            if (ys[i] == y && xs[i] == x) {
+                return_val = i;
+                break;
+            }
+        }
+        """
+        return inline(code, ['ys', 'xs', 'y', 'x'])
+else:  # for pypy
+    def check(ys, xs, y, x):
+        """ Returns index where ys[i]==y, xs[i]==x """
+        for i in range(len(ys)):
+            if ys[i]==y and xs[i]==x:
+                return i
+        return -1
 
 if __name__ == "__main__":
     B = Board()
