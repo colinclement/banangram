@@ -244,24 +244,21 @@ class Bananagrams(object):
             # NOTE: Returns copied updated board/rack
         """
         ys, xs, ss = board
-        ys, xs = self.board.coord_line(board=board, transpose=transpose)
-        # Copies!
-        altrack = [l for l in rack]
-        altys   = [y for y in ys]
-        altxs   = [x for x in xs]
-        altss   = [s for s in ss]
+        ys, xs = self.board.coord_line(transpose, board=board)
+        altrack = rack[:]  # Copies!
+        altys, altxs, altss = ys[:], xs[:], ss[:]
+        newboard = (altys, altxs, altss)
 
         for i, l in enumerate(word):
             c = self.board.check(line, coord+i, transpose=False,
-                                    board=(altys, altxs, altss))
+                                 board=newboard)
             if not c:  # Play tile if spot is empty
                 altrack.remove(l)
                 altys.append(line)
                 altxs.append(coord+i)
                 altss.append(l)
 
-        altys, altxs = self.board.coord_line(board=(altys, altxs, altss), 
-                                             transpose=transpose)
+        altys, altxs = self.board.coord_line(transpose, board=newboard)
         return (altys, altxs, altss), altrack
 
     def solve(self, rack, branch_limit = 100000):
