@@ -90,7 +90,7 @@ for l in 'rad':
     rack.remove(l)
 
 print(B.board.show(board=b))
-#
+
 printrack(rack)
 anchorat(1, 2, rack, board=b)  # passed
 anchorat(1, 0, rack, board=b)  # passed 
