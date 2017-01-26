@@ -27,7 +27,7 @@ with open('../data/twl06.txt', 'r') as infile:
     w = infile.read()
 
 try:
-    G.top.downto('aa')
+    foo = G.top.downto('aa')
 except:
     G = bg.DirectedGraph()
     G.parselex(w)
