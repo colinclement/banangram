@@ -158,7 +158,7 @@ class Bananagrams(object):
             l = self.board.check(line, coord, transpose, **kwargs)
             results = []
             if l:  # If tile is occupied, use it and continue (or stop)
-                if node[l]:
+                if l in node.children:
                     results += flatten([right(partial+l, node[l], 
                                               coord+1, rack)])
                 return results
@@ -168,12 +168,12 @@ class Bananagrams(object):
                 allowed = set(rack)
                 if coord in cross:
                     allowed.intersection_update(cross[coord])
-                for e in allowed.intersection(node.children):
-                    rack.remove(e)
-                    if node[e]:
+                for e in node.children:
+                    if e in allowed:
+                        rack.remove(e)
                         results += flatten([right(partial+e, node[e],
                                                   coord+1, rack)])
-                    rack.append(e)
+                        rack.append(e)
                 return results
             
         def left(partial, node, rack, limit):
@@ -195,6 +195,8 @@ class Bananagrams(object):
                 if pos+i in cross:
                     if not c in cross[pos+i]:
                         proceed = False
+                if not proceed:
+                    break
             if proceed:
                 complete = right(partial, node, anchor+1, rack) if node else []
                 if complete:
@@ -203,12 +205,13 @@ class Bananagrams(object):
                     allowed = set(rack)
                     if anchor in cross:  # Always adding tile to anchor 
                         allowed.intersection_update(cross[anchor])
-                    for e in allowed.intersection(node.children):
-                        rack.remove(e)
-                        # Move partial left 1, adding edge at anchor
-                        results += flatten([left(partial+e, node[e],
-                                                 rack, limit-1)])
-                        rack.append(e)
+                    for e in node.children:
+                        if e in allowed:
+                            rack.remove(e)
+                            # Move partial left 1, adding edge at anchor
+                            results += flatten([left(partial+e, node[e],
+                                                     rack, limit-1)])
+                            rack.append(e)
             return results
 
         if prefix:  # Results using the already-placed left part
@@ -273,11 +276,8 @@ class Bananagrams(object):
                     found, empty tuple is returned.
         """
         firstw = self.firstwords(rack)  # order first words by descending len
-        #len_ord = argsort(map(len, firstw), reverse=True)
         boards_racks = [self.updateboard(0, 0, firstw[i], ([], [], []), rack) 
                         for i in argsort(map(len, firstw), reverse=True)]
-        #boards_racks = [self.updateboard(0, 0, w, ([],[],[]), rack)
-        #                for w in self.firstwords(rack)]
         self._solution = ()
         self._branches = 0
 
@@ -370,48 +370,23 @@ class Bananagrams(object):
 
 
 if __name__ == "__main__":
-    anchor_cross = False
-
-    lex = "dad at car cars cat cats do dog dogs done ear ears eat eats deed ate"
+    import random
+    w = open('../data/twl06.txt', 'r').read()
     G = DirectedGraph()
-    G.parselex(lex)
+    G.parselex(w)
     trie_to_dawg(G)
-    tiles = [s for s in "cateas"]
-
+    print("DAWG Finished!")
+    
+    # Bananagrams tile frequency
+    freq =[13, 3, 3, 6, 18, 3, 4, 3, 12, 2, 2, 5, 3, 8, 11, 3, 2, 9, 6, 9, 6, 3, 3,
+           2, 3, 2]
+    chars = sorted(G.top.children.keys())
+    tiles = reduce(lambda x, y: x+y, [[chars[i] for j in range(f)] 
+                                      for i, f in enumerate(freq)])
+    
     B = Bananagrams(G)
-    ys = [0, 1, 2, 2, 2, 3]
-    xs = [2, 2, 0, 1, 2, 1]
-    ss = [s for s in 'eacatt']
-    B.board.placeall(ys, xs, ss)
+    
+    random.seed(9208914850)
+    rack = random.sample(tiles, 21)
+    sol = B.solve(rack)
 
-    print(B)
-
-    if anchor_cross:
-        print("Across")
-        for i in range(min(B.board.y)-1, max(B.board.y)+2):
-            print('Row ' + str(i))
-            anchors = B.board.find_anchors(i)
-            print("\tAnchors x = " + (' ,'.join(map(str, anchors))))
-            cc = B.board.cross_checks(i)
-            for c in cc:
-                allowed = B.cross_check(i, c)
-                print("CC for (y,x)=({},{}) across: {}".format(i, c, allowed))
-        print("Down")
-        for j in range(min(B.board.x)-1, max(B.board.x)+2):
-            print("Column " + str(j))
-            anchors = B.board.find_anchors(j, transpose=True)
-            print("\tAnchors x = " + (' ,'.join(map(str, anchors))))
-            cc = B.board.cross_checks(j, transpose=True)
-            for c in cc:
-                allowed = B.cross_check(j, c, True)
-                print("CC for (y,x)=({},{}) down: {}".format(c, j, allowed))
-
-    #print("Test for right extend from (y,x)=(0,2)")
-    #print("with rack = 'a', 'r', 't', 's'")
-    #print(B._right('', B.G.top, 0, 2, ['a', 'r', 't', 's']))
-    #print("")
-    print("Test for up to 3 left extend from anchor (y,x)=(0,1)")
-    print("with rack = 'a', 'e', 'd', 'd', 'n', 'o', 't'")
-    #print('(0,1)', B.get_words(0, 1, ['d', 'r', 'o', 'n', 'a', 't', 'e', 'd']))
-    print('(1,1)', B.get_words(1, 1, ['d', 'r', 'o', 'n', 'a', 't', 'e', 'd'],
-                               checks=[1]))

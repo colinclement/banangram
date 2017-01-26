@@ -1,2 +1,4 @@
 *.pyc
 papers
+*.pkl
+figs
