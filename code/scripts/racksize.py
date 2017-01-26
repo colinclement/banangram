@@ -13,11 +13,13 @@ import sys
 sys.path.append('../')
 import random
 from collections import defaultdict
+import cPickle as pkl
 
 from graph import DirectedGraph, trie_to_dawg
 from bananagram import Bananagrams
 
-w = open('../../data/twl06.txt', 'r').read()
+#w = open('../../data/twl06.txt', 'r').read()
+w = open('../../data/sowpods.txt', 'r').read()
 G = DirectedGraph()
 G.parselex(w)
 trie_to_dawg(G)
@@ -50,3 +52,6 @@ for s in range(2, 30):
             report += 1
     report = float(report)/float(len(sizedict[s]))
     print("{}% of rack size {} solved".format(report*100., s))
+
+pickle.dump(sizedict, open('../../data/2016-01-26-racksize-data-sowpods.pkl',
+                           'w'), 0)
