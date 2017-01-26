@@ -272,8 +272,11 @@ class Bananagrams(object):
             board: tuple of lists (ys, xs, ss), Solution!. If no solution
                     found, empty tuple is returned.
         """
+        words = self.firstwords(rack)
+        words.sort(key=len,reverse=True)
+
         boards_racks = [self.updateboard(0, 0, w, ([],[],[]), rack)
-                        for w in self.firstwords(rack)]
+                        for w in words]
         self._solution = ()
         self._branches = 0
 
