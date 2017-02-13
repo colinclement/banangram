@@ -1,2 +1,4 @@
 *.pyc
 papers
+.ipynb*
+.DS_store*
