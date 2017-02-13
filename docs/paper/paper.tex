@@ -30,5 +30,32 @@
 
 \maketitle
 
+\section{Introduction}
+
+\section{Algorithm}
+
+\section{Theoretical Stuff}
+\subsection{Probability of a word in a rack}
+Given a lexicon, a character frequency, and a random rack of $n$ tiles, $R_n$, what is the probability that a word $w_k$ from the lexicon can be made from those tiles. $w_k$ is made up of $k$ letters, whose (independent) probabilities of being drawn are $P(l_0),\ldots,P(l_{k-1})$.
+
+$P(w_k \in R_n)$
+
+\begin{equation}
+P(w_k \in R_k) = \frac{k!}{\prod_{c\in w_k} m_c} P(l_0)\cdot P(l_{k-1}),
+\end{equation}
+with $m_c$ the number of occurences of character $c$ in the word (i.e., in the word `feet', $m_\text{e} = 2$, $m_\text{f}=1$, etc.).
+
+Now, the probability that 
+
+
+\section{Science!}
+\subsection{Lexicon Results}
+\emph{Hypothesis 1}: As the rack size increases, the probability of finding a solution should limit to 1 (a solution exists).
+
+The solid blue line in figure \ref{fig:solbyrack} demonstrates that this is not so, as the proportion of racks that terminate in a solution limits to about 96\% for the twl06 lexicon. Figure \ref{fig:branchlimhist} indicates that the issue is not in hitting a branch limit, but rather confirms that these are boards without solutions (some have been checked by hand).
+
+\emph{Hypothesis 2}: This limiting value is a property of the lexicon and the far more permitting lexicon sowpods will limit to 1.
+
+The solid red line in figure \ref{fig:solbyrack} shows that this, too, is not the case. In fact, the two lexica appear to have the same limiting value.
 
 \end{document}
