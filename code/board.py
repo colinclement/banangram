@@ -26,18 +26,20 @@ class Board(object):
         self.ys = []  # integers of occupied sites y-coords
         self.xs = []  # integers of occupied sites x-coords
         self.ss = []  # list of str at corresponding y, x
+        self.bb = {}
 
     def show(self, **kwargs):
         """ Pretty print the board! Coords are abs """
-        ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
-        if not ys:
+        bb = kwargs.get('board', self.bb)
+        if not bb:
             return super(Board, self).__repr__()
-        xc_range = range(min(xs), max(xs)+1)
+        ymin, ymax, xmin, xmax = self.limits(**kwargs)
+        xc_range = range(xmin, xmax+1)
         boardstr = ' ' + ''.join(map(lambda x: str(abs(x)), xc_range))
         boardstr += '\n'
-        for y in range(min(ys), max(ys)+1):
+        for y in range(ymin, ymax+1):
             boardstr += str(abs(y)) + "\033[0;30;47m"
-            for x in range(min(xs), max(xs)+1):
+            for x in range(xmin, xmax+1):
                 s = self.check(y, x, transpose=False, **kwargs)
                 if s:
                     boardstr += s.upper()
@@ -57,20 +59,36 @@ class Board(object):
         self.ys.append(y)
         self.xs.append(x)
         self.ss.append(s)
+        self.bb[(y,x)] = s
 
-    def replace(self, y, x, s):
+    def replace(self, board):
         """ Reset then placeall """
         self.reset()
-        self.placeall(y, x, s)
+        self.placeall(board)
 
     def pop(self, ind=-1):
         """ Removes the last-placed tile and returns y, x, s """
-        return self.ys.pop(ind), self.xs.pop(ind), self.ss.pop(ind)
+        y, x, s = self.ys.pop(ind), self.xs.pop(ind), self.ss.pop(ind)
+        bb.pop((y,x))
+        return y, x, s
 
-    def placeall(self, ys, xs, ss):
+    def placeall(self, board):
         """ place a list of tiles """
-        for y, x, s in zip(ys, xs, ss):
-            self.place(y, x, s)
+        if type(board) is dict:
+            for s in board:
+                self.place(s[0],s[1],board[s])
+        if type(board) is list: 
+            for (y, x, s) in board:
+                self.place(y, x, s)
+
+    def limits(self, **kwargs):
+        """ Returns board limits ymin, ymax, xmin, xmax """
+        bb = kwargs.get('board', self.bb)
+        ymin = min(bb, key=lambda x: x[0])[0]
+        ymax = max(bb, key=lambda x: x[0])[0]
+        xmin = min(bb, key=lambda x: x[1])[1]
+        xmax = max(bb, key=lambda x: x[1])[1]
+        return ymin, ymax, xmin, xmax
 
     def check(self, line, coord, transpose=False, **kwargs):
         """
@@ -81,26 +99,31 @@ class Board(object):
             board: tuple (ys (list), xs (list), ss (list)) for
                 specifying a custom board
         """
-        ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
-        ind = _check(ys, xs, line, coord, transpose)  # returns index or -1
-        if ind < 0:
-            return ''
-        else:
-            return ss[ind]
-
-    def coord_line(self, transpose=False, **kwargs):
-        """
-        Select coordinates for line search, swap if transpose
-
-        kwargs:
-            board: tuple (ys (list), xs (list), ss (list)) for
-                specifying a custom board
-        """
-        ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
+        #ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
+        #ind = _check(ys, xs, line, coord, transpose)  # returns index or -1
+        #if ind < 0:
+        #    return ''
+        #else:
+        #    return ss[ind]
+        bb = kwargs.get('board', self.bb)
         if transpose:
-            return xs, ys
+            return bb.get((coord, line), '')
         else:
-            return ys, xs
+            return bb.get((line, coord), '')
+
+    #def coord_line(self, transpose=False, **kwargs):
+    #    """
+    #    Select coordinates for line search, swap if transpose
+
+    #    kwargs:
+    #        board: tuple (ys (list), xs (list), ss (list)) for
+    #            specifying a custom board
+    #    """
+    #    ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
+    #    if transpose:
+    #        return xs, ys
+    #    else:
+    #        return ys, xs
 
     def walk(self, line, coord, transpose=False, sgn=1, **kwargs):
         """
@@ -141,8 +164,13 @@ class Board(object):
             board: tuple (ys (list), xs (list), ss (list)) for
                 specifying a custom board
         """
-        l, c = self.coord_line(transpose, **kwargs)
-        return {c[i] for i, j in enumerate(l) if j == line}
+        #l, c = self.coord_line(transpose, **kwargs)
+        #return {c[i] for i, j in enumerate(l) if j == line}
+        bb = kwargs.get('board', self.bb)
+        if transpose:
+            return {yx[0] for yx in bb if yx[1]==line}
+        else:
+            return {yx[1] for yx in bb if yx[0]==line}
 
     def find_anchors(self, line, transpose=False, **kwargs):
         """
@@ -181,37 +209,37 @@ class Board(object):
         return (up.union(down)).difference(occupied)
 
 
-if has_scipy:
-    def _check(ys, xs, line, coord, t):
-        """ Returns index where ys[i]==y, xs[i]==x """
-        t = 1*t  # make 1 or 0
-        code = r"""
-        int y=0, x=0;
-        if (t > 0){
-            y = coord; x = line;
-        } else {
-            x = coord; y = line;
-        }
-        return_val = -1;
-        for (int i = 0; i < ys.length(); i++){
-            if (ys[i] == y && xs[i] == x) {
-                return_val = i;
-                break;
-            }
-        }
-        """
-        return inline(code, ['ys', 'xs', 'line', 'coord', 't'])
-else:  # for pypy
-    def _check(ys, xs, line, coord, t):
-        """ Returns index where ys[i]==y, xs[i]==x """
-        if t:
-            y, x = coord, line
-        else:
-            x, y = coord, line
-        for i in range(len(ys)):
-            if ys[i]==y and xs[i]==x:
-                return i
-        return -1
+#if has_scipy:
+#    def _check(ys, xs, line, coord, t):
+#        """ Returns index where ys[i]==y, xs[i]==x """
+#        t = 1*t  # make 1 or 0
+#        code = r"""
+#        int y=0, x=0;
+#        if (t > 0){
+#            y = coord; x = line;
+#        } else {
+#            x = coord; y = line;
+#        }
+#        return_val = -1;
+#        for (int i = 0; i < ys.length(); i++){
+#            if (ys[i] == y && xs[i] == x) {
+#                return_val = i;
+#                break;
+#            }
+#        }
+#        """
+#        return inline(code, ['ys', 'xs', 'line', 'coord', 't'])
+#else:  # for pypy
+#    def _check(ys, xs, line, coord, t):
+#        """ Returns index where ys[i]==y, xs[i]==x """
+#        if t:
+#            y, x = coord, line
+#        else:
+#            x, y = coord, line
+#        for i in range(len(ys)):
+#            if ys[i]==y and xs[i]==x:
+#                return i
+#        return -1
 
 if __name__ == "__main__":
     B = Board()
