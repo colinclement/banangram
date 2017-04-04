@@ -1,4 +1,6 @@
 *.pyc
 papers
-.ipynb*
-.DS_store*
+*.pkl
+figs
+*.DS_Store
+*.orig

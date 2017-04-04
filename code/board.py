@@ -82,11 +82,7 @@ class Board(object):
                 specifying a custom board
         """
         ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
-        if transpose:
-            y, x = coord, line
-        else:
-            x, y = coord, line
-        ind = check(ys, xs, y, x)  # returns index of line, coord
+        ind = _check(ys, xs, line, coord, transpose)  # returns index or -1
         if ind < 0:
             return ''
         else:
@@ -186,13 +182,16 @@ class Board(object):
 
 
 if has_scipy:
-    def check(ys, xs, y, x):
+    def _check(ys, xs, line, coord, t):
         """ Returns index where ys[i]==y, xs[i]==x """
-        assert len(ys) == len(xs)
-        assert len(xs) == len(ys)
-        assert isinstance(y, int)
-        assert isinstance(x, int)
+        t = 1*t  # make 1 or 0
         code = r"""
+        int y=0, x=0;
+        if (t > 0){
+            y = coord; x = line;
+        } else {
+            x = coord; y = line;
+        }
         return_val = -1;
         for (int i = 0; i < ys.length(); i++){
             if (ys[i] == y && xs[i] == x) {
@@ -201,10 +200,14 @@ if has_scipy:
             }
         }
         """
-        return inline(code, ['ys', 'xs', 'y', 'x'])
+        return inline(code, ['ys', 'xs', 'line', 'coord', 't'])
 else:  # for pypy
-    def check(ys, xs, y, x):
+    def _check(ys, xs, line, coord, t):
         """ Returns index where ys[i]==y, xs[i]==x """
+        if t:
+            y, x = coord, line
+        else:
+            x, y = coord, line
         for i in range(len(ys)):
             if ys[i]==y and xs[i]==x:
                 return i
