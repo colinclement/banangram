@@ -2,3 +2,5 @@
 papers
 *.pkl
 figs
+*.DS_Store
+*.orig
