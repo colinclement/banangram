@@ -9,11 +9,6 @@ Representation of a Bananagrams board, an unbounded square lattice
 """
 
 from collections import defaultdict
-try:
-    from scipy.weave import inline
-    has_scipy = True
-except ImportError as ierr:
-    has_scipy = False
 
 
 class Board(object):
@@ -99,31 +94,11 @@ class Board(object):
             board: tuple (ys (list), xs (list), ss (list)) for
                 specifying a custom board
         """
-        #ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
-        #ind = _check(ys, xs, line, coord, transpose)  # returns index or -1
-        #if ind < 0:
-        #    return ''
-        #else:
-        #    return ss[ind]
         bb = kwargs.get('board', self.bb)
         if transpose:
             return bb.get((coord, line), '')
         else:
             return bb.get((line, coord), '')
-
-    #def coord_line(self, transpose=False, **kwargs):
-    #    """
-    #    Select coordinates for line search, swap if transpose
-
-    #    kwargs:
-    #        board: tuple (ys (list), xs (list), ss (list)) for
-    #            specifying a custom board
-    #    """
-    #    ys, xs, ss = kwargs.get('board', (self.ys, self.xs, self.ss))
-    #    if transpose:
-    #        return xs, ys
-    #    else:
-    #        return ys, xs
 
     def walk(self, line, coord, transpose=False, sgn=1, **kwargs):
         """
@@ -164,8 +139,6 @@ class Board(object):
             board: tuple (ys (list), xs (list), ss (list)) for
                 specifying a custom board
         """
-        #l, c = self.coord_line(transpose, **kwargs)
-        #return {c[i] for i, j in enumerate(l) if j == line}
         bb = kwargs.get('board', self.bb)
         if transpose:
             return {yx[0] for yx in bb if yx[1]==line}
@@ -208,38 +181,6 @@ class Board(object):
         down = self.occupied(line + 1, transpose, **kwargs)
         return (up.union(down)).difference(occupied)
 
-
-#if has_scipy:
-#    def _check(ys, xs, line, coord, t):
-#        """ Returns index where ys[i]==y, xs[i]==x """
-#        t = 1*t  # make 1 or 0
-#        code = r"""
-#        int y=0, x=0;
-#        if (t > 0){
-#            y = coord; x = line;
-#        } else {
-#            x = coord; y = line;
-#        }
-#        return_val = -1;
-#        for (int i = 0; i < ys.length(); i++){
-#            if (ys[i] == y && xs[i] == x) {
-#                return_val = i;
-#                break;
-#            }
-#        }
-#        """
-#        return inline(code, ['ys', 'xs', 'line', 'coord', 't'])
-#else:  # for pypy
-#    def _check(ys, xs, line, coord, t):
-#        """ Returns index where ys[i]==y, xs[i]==x """
-#        if t:
-#            y, x = coord, line
-#        else:
-#            x, y = coord, line
-#        for i in range(len(ys)):
-#            if ys[i]==y and xs[i]==x:
-#                return i
-#        return -1
 
 if __name__ == "__main__":
     B = Board()
