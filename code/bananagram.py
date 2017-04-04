@@ -293,19 +293,6 @@ class Bananagrams(object):
                 self._solution = board
 
             if not self._solution and self._branches < branch_limit:
-                # Down moves
-                for x in range(xmin, xmax+1):
-                    cross = self.board.cross_checks(x, True, board=board)
-                    anchors = self.board.find_anchors(x, True, board=board)
-                    for a in anchors:
-                        wlist = self.get_words(x, a, rack, cross, True,
-                                               board=board)
-                        for p, word in wlist:
-                            nxtb, nxtr = self.updateboard(x, p, word, board,
-                                                          rack, True)
-                            if nxtr != rack:  # only call again if playable!
-                                backtrack(nxtb, nxtr)
-            if not self._solution and self._branches < branch_limit:
                 # Across moves
                 for y in range(ymin, ymax+1):
                     cross = self.board.cross_checks(y, board=board)
@@ -318,6 +305,20 @@ class Bananagrams(object):
                                                           rack)
                             if nxtr != rack:  # only call again if playable!
                                 backtrack(nxtb, nxtr)
+            if not self._solution and self._branches < branch_limit:
+                # Down moves
+                for x in range(xmin, xmax+1):
+                    cross = self.board.cross_checks(x, True, board=board)
+                    anchors = self.board.find_anchors(x, True, board=board)
+                    for a in anchors:
+                        wlist = self.get_words(x, a, rack, cross, True,
+                                               board=board)
+                        for p, word in wlist:
+                            nxtb, nxtr = self.updateboard(x, p, word, board,
+                                                          rack, True)
+                            if nxtr != rack:  # only call again if playable!
+                                backtrack(nxtb, nxtr)
+
 
         # Consider sorting boards_racks by word length, starting with longest
         for b, r in boards_racks:

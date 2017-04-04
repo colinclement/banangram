@@ -193,7 +193,7 @@ def trie_to_dawg(G):
 
 if __name__ == "__main__":
     lex = "car cars cat cats do dog dogs done ear ears eat eats"
-    with open('../data/sowpods.txt', 'r') as infile:
+    with open('../data/twl06.txt', 'r') as infile:
         w = infile.read()
 
     G = DirectedGraph()
