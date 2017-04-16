@@ -4,3 +4,5 @@ papers
 figs
 *.DS_Store
 *.orig
+*.swp
+.ipynb_checkpoints
