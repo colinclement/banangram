@@ -14,6 +14,8 @@ from board import Board
 def flatten(lst):
     return reduce(lambda x, y: x + y, lst, [])
 
+def argsort(lst, **kwargs):
+    return sorted(range(len(lst)), key=lst.__getitem__, **kwargs)
 
 class Bananagrams(object):
     def __init__(self, dawg, **kwargs):
@@ -235,31 +237,23 @@ class Bananagrams(object):
             line: int, line along which word is placed
             coord: int, coordinate along line upon which word is started
             word: str, word to be placed
-            board: tuple (ys (list), xs (list), ss (list)), board to be
-                    updated
+            board: dict of form (y,x): s
             rack: list of str, letters in rack to be updated
             transpose: True (line=y, coord=x)/False (line=x, coord=y)
         returns:
-            board (tuple of lists, updated), rack (list of str, updated)
-            # NOTE: Returns copied updated board/rack
+            board (update board updated), rack (list of str, updated)
         """
-        ys, xs, ss = board
-        ys, xs = self.board.coord_line(transpose, board=board)
-        altrack = rack[:]  # Copies!
-        altys, altxs, altss = ys[:], xs[:], ss[:]
-        newboard = (altys, altxs, altss)
-
-        for i, l in enumerate(word):
-            c = self.board.check(line, coord+i, transpose=False,
-                                 board=newboard)
-            if not c:  # Play tile if spot is empty
-                altrack.remove(l)
-                altys.append(line)
-                altxs.append(coord+i)
-                altss.append(l)
-
-        altys, altxs = self.board.coord_line(transpose, board=newboard)
-        return (altys, altxs, altss), altrack
+        newboard = dict(board)  # copies
+        newrack = list(rack)
+        if transpose:
+            sites = [(coord+i, line) for i in range(len(word))]
+        else:
+            sites = [(line,coord+i) for i in range(len(word))]
+        for s, w in zip(sites, word):
+            if not newboard.get(s):
+                newboard[s] = w
+                newrack.remove(w)
+        return newboard, newrack
 
     def solve(self, rack, branch_limit = 100000):
         """
@@ -272,11 +266,9 @@ class Bananagrams(object):
             board: tuple of lists (ys, xs, ss), Solution!. If no solution
                     found, empty tuple is returned.
         """
-        words = self.firstwords(rack)
-        words.sort(key=len,reverse=True)
-
-        boards_racks = [self.updateboard(0, 0, w, ([],[],[]), rack)
-                        for w in words]
+        firstw = self.firstwords(rack)  # order first words by descending len
+        boards_racks = [self.updateboard(0, 0, firstw[i], {}, rack) 
+                        for i in argsort(map(len, firstw), reverse=True)]
         self._solution = ()
         self._branches = 0
 
@@ -285,8 +277,7 @@ class Bananagrams(object):
             Backtracking algorithm for searching for words
             """
             self._branches += 1
-            ys, xs, ss = board
-            ymin, ymax, xmin, xmax = min(ys), max(ys), min(xs), max(xs)
+            ymin, ymax, xmin, xmax = self.board.limits(board=board)
 
             if len(rack) == 0:  # DONE!
                 self._solution = board
@@ -324,7 +315,7 @@ class Bananagrams(object):
             if not self._solution and self._branches < branch_limit:
                 backtrack(b, r)
         if self._solution:
-            self.board.placeall(*self._solution)
+            self.board.placeall(self._solution)
         return self._solution
 
     def validate(self, board):
@@ -337,8 +328,7 @@ class Bananagrams(object):
         returns:
             board is a solution (True/False), list of words on board
         """
-        ys, xs, ss = board
-        ymin, ymax, xmin, xmax = min(ys), max(ys), min(xs), max(xs)
+        ymin, ymax, xmin, xmax = self.board.limits(board=board)
         # Check down words
         words, solution = [], True
         for x in range(xmin, xmax+1):
