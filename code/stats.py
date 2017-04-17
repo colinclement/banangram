@@ -18,6 +18,8 @@ from graph import DirectedGraph, trie_to_dawg
 def word_prob(word, charfreqdict, lenrack):
     """Analytically compute the probability that word appears in a rack from a
     language characterized by charfreqdict.
+
+    Note: Haven't gotten this one worked out yet... DO NOT TRUST
     """
     letfreq = reduce(lambda x, y: x*y, map(lambda c: charfreqdict[c], word))
     overcounts = [sum([l==c for c in word]) for l in set(word)]
@@ -85,6 +87,15 @@ def generate_rand_lexicon(nchars, nwords, wordlenpdf=None):
     return lexstr
 
 def generate_rand_dawg(nchars, nwords, wordlenpdf=None):
+    """
+    Generate a random DAWG whose word lengths are distributed by function
+    wordlenpdf, using gnerate_rand_lexicon above.
+    input:
+        nchars: number of characters in lexicon
+        nwords: number of words in lexicon
+        wordlenpdf: a function
+
+    """
     rand_lex = generate_rand_lexicon(nchars, nwords, wordlenpdf)
     G = DirectedGraph()
     G.parselex(rand_lex)
@@ -92,6 +103,9 @@ def generate_rand_dawg(nchars, nwords, wordlenpdf=None):
     return G
 
 def generate_markov_lexicon(nchars, maxwordlength=10, prob=0.5):
+    """
+    Generate a random lexicon for which 
+    """
     assert nchars <= 26, 'Currently only supports english characters'
     chars = 'abcdefghijklmnopqrstuvwxyz'[:nchars]
 
