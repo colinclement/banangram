@@ -18,8 +18,8 @@ import pickle
 from graph import DirectedGraph, trie_to_dawg
 from bananagram import Bananagrams
 
-#w = open('../../data/twl06.txt', 'r').read()
-w = open('../../data/sowpods.txt', 'r').read()
+w = open('../../data/twl06.txt', 'r').read()
+#w = open('../../data/sowpods.txt', 'r').read()
 G = DirectedGraph()
 G.parselex(w)
 trie_to_dawg(G)
@@ -36,7 +36,13 @@ B = Bananagrams(G)
 
 sizedict = {}
 
+<<<<<<< HEAD
 for s in range(2, 25):
+=======
+nosol = []
+
+for s in range(15, 16):
+>>>>>>> 2447ecd3c3d1101e3b15596378cedb7b3863e00d
     sizedict[s] = [] 
     for i in range(1000):
         rack = random.sample(tiles, s)
@@ -44,6 +50,9 @@ for s in range(2, 25):
     
         sol = B.solve(rack)
         results['solution'] = sol
+        if not sol:
+            print("no solution found")
+            nosol += [rack]
         results['branches'] = B._branches
         sizedict[s] += [results]
     report = 0
@@ -53,5 +62,5 @@ for s in range(2, 25):
     report = float(report)/float(len(sizedict[s]))
     print("{}% of rack size {} solved".format(report*100., s))
 
-pickle.dump(sizedict, open('../../data/2016-01-27-racksize-data-sowpods.pkl',
-                           'w'), 0)
+#pickle.dump(sizedict, open('../../data/2016-01-26-racksize-data-sowpods.pkl',
+#                           'w'), 0)

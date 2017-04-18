@@ -35,7 +35,8 @@ ss = [s for s in 'easeatt']
 # NOTE: I removed placeall so that I could test passing in a custom
 #       board through kwarg!
 #       It passed!
-b = (ys, xs, ss)
+#b = (ys, xs, ss)
+b = {(y,x): s for y, x, s in zip(ys, xs, ss)}
 
 print('Testing board properties')
 print(board.show(board=b))
@@ -98,7 +99,9 @@ anchorat(0, 2, rack, board=b)  # passed
 # Test word option generation with preplaced prefix
 
 # Test word placement across
+rack += ['r', 'a', 'd']
 print('0: Test across word placement: "read" at (y,x)=(1,1)')
+printrack(rack)
 altboard, altrack = B.updateboard(1, 1, 'read', b, rack)
 print(B.board.show(board=altboard))
 printrack(altrack)
@@ -111,11 +114,11 @@ printrack(altrack)
 
 
 print('2: Test solution algorithm with solveable rack')
-testrack = b[2]
+testrack = b.values()
 printrack(testrack)
 print(B.solve(testrack))
 
 print('3: Test solution algorith with unsolveable rack')
-testrack = b[2] + ['z']
+testrack = b.values() + ['z']
 printrack(testrack)
 print(B.solve(testrack))
