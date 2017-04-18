@@ -13,7 +13,7 @@ import sys
 sys.path.append('../')
 import random
 from collections import defaultdict
-import cPickle as pkl
+import pickle
 
 from graph import DirectedGraph, trie_to_dawg
 from bananagram import Bananagrams
@@ -36,7 +36,7 @@ B = Bananagrams(G)
 
 sizedict = {}
 
-for s in range(2, 30):
+for s in range(2, 25):
     sizedict[s] = [] 
     for i in range(1000):
         rack = random.sample(tiles, s)
@@ -53,5 +53,5 @@ for s in range(2, 30):
     report = float(report)/float(len(sizedict[s]))
     print("{}% of rack size {} solved".format(report*100., s))
 
-pickle.dump(sizedict, open('../../data/2016-01-26-racksize-data-sowpods.pkl',
+pickle.dump(sizedict, open('../../data/2016-01-27-racksize-data-sowpods.pkl',
                            'w'), 0)
