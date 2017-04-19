@@ -122,6 +122,46 @@ P_{ij}\mathbf{u_2} &= P\left(\mathbf{v_W} -\alpha\mathbf{v_B}\right) = P\mathbf{
 &=\frac{2-\alpha}{2} \mathbf{v_W}-\frac{\alpha}{2}\mathbf{v_B}
 \end{align}
 
+Try
+\begin{equation}
+\mathbf{v_2} = \mathbf{v_B} - \mathbf{v_{NW}} = \left[\begin{array}{c}
+0 \\ -1/2N \\ \vdots \\ -1/2N \\ -1/2N \\ \vdots \\ -1/2N \\ 1
+\end{array}\right]
+\end{equation}
+
+\begin{align}
+P_{ij}\mathbf{v_2} &= \left[\begin{array}{c}
+0\\
+N(-1/2N)(1/2N) + N(-1/2N)((1-\alpha)/2N)\\
+\vdots\\
+N(-1/2N)(1/2N) + N(-1/2N)((1-\alpha)/2N) \\
+N(-1/2N)\alpha + 1
+\end{array}\right] \\
+&=\left[\begin{array}{c}
+0\\
+((2-\alpha)/2)(-1/2N)\\
+\vdots\\
+((2-\alpha)/2)(-1/2N) \\
+(2-\alpha)/2
+\end{array}\right]= \frac{2-\alpha}{2}\left[\begin{array}{c}
+0\\-1/2N\\\vdots\\-1/2N\\1
+\end{array}\right]=\frac{2-\alpha}{2}\mathbf{v_2}
+\end{align}
+
+\begin{equation}
+\mathbf{v_2}\cdot\mathbf{v_2} = 2N\frac{1}{4N^2} + 1 = \frac{1 + 2N}{2N}
+\end{equation}
+
+Alternatively,
+\begin{align}
+P\mathbf{v_2} &= P(\mathbf{v_B} - \mathbf{v_{NW}}) = \alpha\mathbf{v_B} - (\frac{2-\alpha}{2}\mathbf{v_{NW}} + \frac{\alpha}{2}\mathbf{v_B})\\
+&=\frac{2-\alpha}{2}(\mathbf{v_B} - \mathbf{v_{NW}}) = \frac{2-\alpha}{2}\mathbf{v_2}
+\end{align}
+
+
+
+
+
 
 \end{document}
 
