@@ -20,34 +20,30 @@
 \begin{document}
 \maketitle
 
-We are interested in modeling the generation of a random lexicon as a Markov process. For the process, we imagine stringing characters together until, at some random point, the string is considered a word. There are thus four qualitatively different states for the Markov process (and degeneracies corresponding to the number of allowable characters). We will need to check
+We are interested in modeling the generation of a random lexicon as a Markov process. For the process, we imagine stringing characters together until, at some random point, the string is considered a word. At another random point, it's decided that no more words can be made using the last word as a starting point. There are thus three qualitatively different states for the Markov process (and degeneracies corresponding to the number of allowable characters). We will need to check
 \begin{enumerate}
 \item the columns sum to 1 (so the transition to the next state is a probability),
 \item the largest eigenvalue is equal to 1,
 \item the lexicon generated is finite (finite words are generated).
 \end{enumerate}
-The possible states are the top node (before adding the first letter), adding a character that does not finish a word, adding a character that finishes a word, and the bottom node (corresponding to a finished word that has no suffixes). For $N$ characters, the transition matrix $P$ for this process has a shape of $2(N+1)\times2(N+1)$ (2 edge nodes, $N$ characters that don't finish words, $N$ characters that could finish words). If we imagine each character as equally likely and completable words being completed with probability $\alpha$, then the transition matrix can be expressed as
+The possible states from the first letter come from adding a character that does not finish a word, adding a character that finishes a word, and the bottom node (corresponding to a finished word that has no suffixes). For $N$ characters, the transition matrix $P$ for this process has a shape of $2N+1\times2N+1$ ($N$ characters that don't finish words, $N$ characters that could finish words, and the bottom node). If we imagine each character as equally likely and completable words being completed with probability $\alpha$, then the transition matrix can be expressed as
 \begin{equation}
 P_{ij}=\left[\begin{array}{c c c c c c}
-0 & 0 & 0 & 0 & 0 & 0 \\
-1/N & 1/2N&\cdots & (1-\alpha)/2N & \cdots & 0\\
-\vdots & \vdots & & \vdots & & \vdots\\
-1/N & 1/2N & \cdots & (1-\alpha)/2N & \cdots & 0\\
-0 & 1/2N & \cdots & (1-\alpha)/2N & \cdots & 0\\
-\vdots & \vdots & & \vdots & & \vdots\\
-0 & 1/2N & \cdots & (1-\alpha)/2N & \cdots & 0\\
-0 & 0 & \cdots & \alpha & \cdots & 1
+1/2N&\cdots & (1-\alpha)/2N & \cdots & 0\\
+ \vdots & & \vdots & & \vdots\\
+1/2N & \cdots & (1-\alpha)/2N & \cdots & 0\\
+1/2N & \cdots & (1-\alpha)/2N & \cdots & 0\\
+\vdots & & \vdots & & \vdots\\
+1/2N & \cdots & (1-\alpha)/2N & \cdots & 0\\
+0 & \cdots & \alpha & \cdots & 1
 \end{array}
 \right].
 \end{equation}
 
-We've got to unpack this a little. The first row represents the top node state - no state should be able to return to the top node, so it is filled with zeros. The next $N$ rows correspond to the $N$ characters that don't end words. The top node leads only to these to exclude words that are only one character long, but it can lead to any of the characters with equal probability, hence the $1/N$ populating that segment of the first column. The next $N$ rows are the $N$ characters that end words. Characters that do and do not end words may transition to each other (e.g., $\circ$en\=d might transition to $\circ$en\=di on its way to $\circ$en\=din\=g\=s). The latter selects the next character with equal probability ($1/2N$), but the former must retain the possibility of actually ending the branch (as no word can be constructed from $\circ$en\=din\=g\=s$\bullet$). We denote the probability of ending a branch as $\alpha$. This $\alpha$ factor is removed uniformly from the transition probabilities away from a character that end words, hence $(1-\alpha)/2N$. Finally, the last row corresponds to the bottom node state, that cannot transition to anywhere.
+We've got to unpack this a little. The first $N$ rows correspond to the $N$ characters that don't end words. The next $N$ rows are the $N$ characters that end words. Characters that do and do not end words may transition to each other (e.g., $\circ$en\=d might transition to $\circ$en\=di on its way to $\circ$en\=din\=g\=s). The latter selects the next character with equal probability ($1/2N$), but the former must retain the possibility of actually ending the branch (as no word can be constructed from $\circ$en\=din\=g\=s$\bullet$). We denote the probability of ending a branch as $\alpha$. This $\alpha$ factor is removed uniformly from the transition probabilities away from a character that end words, hence $(1-\alpha)/2N$. Finally, the last row corresponds to the bottom node state, that cannot transition to anywhere.
 
-The columns can similarly be partitioned into those four categories, where we define the following vectors
+The columns can similarly be partitioned into those three categories, where we define the following vectors
 \begin{align}
-\mathbf{v_T}& = \left[\begin{array}{c}
-0 \\ 1/N \\ \vdots \\ 1/N \\ 0 \\ \vdots \\ 0 \\ 0
-\end{array}\right] & 
 \mathbf{v_{NW}}& = \left[\begin{array}{c}
 0 \\ 1/2N \\ \vdots \\ 1/2N \\ 1/2N \\ \vdots \\ 1/2N \\ 0
 \end{array}\right] & 
@@ -60,17 +56,20 @@ The columns can similarly be partitioned into those four categories, where we de
 \end{align}
 Clearly there are many linear dependencies between the columns (as there are $N$ each of $\mathbf{v_{NW}}$ and $\mathbf{v_W}$). An additional linear dependence that is of note is
 \begin{equation}
-\mathbf{v_W} = \alpha\mathbf{v_B} + (1-\alpha)\mathbf{v_{NW}}
+\mathbf{v_W} = \alpha\mathbf{v_B} + (1-\alpha)\mathbf{v_{NW}}.
 \end{equation}
+The existence of this linear relationship and the number of degeneracies in the matrix $P$ suggests that there should only be two nonzero eigenvalues of $P$.
 
-We proceed now to evaluate how each of these vectors is acted upon by $P$.
-\begin{equation}
-P_{ij}\mathbf{v_T} = \left[\begin{array}{c}
-0\\N(1/N)(1/2N)\\\vdots\\N(1/N)(1/2N)\\0
-\end{array}\right] = \left[\begin{array}{c}
-0\\1/2N\\\vdots\\1/2N\\0
-\end{array}\right]=\mathbf{v_{NW}}
-\end{equation}
+Before jumping to the eigendecomposition, let's explore some of the properties of $P$. First, the inner spaces:
+\begin{align}
+\mathbf{v_B}\cdot\mathbf{v_B} &= 1\\
+\mathbf{v_{NW}}\cdot\mathbf{v_{NW}} &= 1/2N\\
+\mathbf{v_W}\cdot\mathbf{v_W} &= (1 - 2\alpha + (1+2N)\alpha^2)/2N\\
+\mathbf{v_B}\cdot\mathbf{v_{NW}} &= 0\\
+\mathbf{v_B}\cdot\mathbf{v_W} &= \alpha\\
+\mathbf{v_{NW}}\cdot\mathbf{v_W} &= (1-\alpha)/2N.\\
+\end{align}
+Now, evaluate how each of these vectors is acted upon by $P$.
 \begin{align}
 P_{ij}\mathbf{v_{NW}} &= \left[\begin{array}{c}
 0\\N(1/2N)^2 + N(1/2N)((1-\alpha)/2N)\\\vdots\\N(1/2N)^2 + N(1/2N)((1-\alpha)/2N)\\N(1/2N)\alpha
@@ -92,43 +91,19 @@ P_{ij}\mathbf{v_B} = \left[\begin{array}{c}
 0\\\vdots\\0\\1
 \end{array}\right] = \mathbf{v_B}
 \end{equation}
-Note that $\mathbf{v_T}$ transitions into the ``not word'' state, which is what we wanted. Next, observe that the bottom node state transitions only to itself, and is therefore our first eigenvector, and has an eigenvalue of one.
+Observe that the bottom node state transitions only to itself, and is therefore our first eigenvector, and has an eigenvalue of one.
 
-
-\begin{align}
-\mathbf{v_B}\cdot\mathbf{v_B} &= 1\\
-\mathbf{v_T}\cdot\mathbf{v_T} &= 1/N\\
-\mathbf{v_{NW}}\cdot\mathbf{v_{NW}} &= 1/2N\\
-\mathbf{v_W}\cdot\mathbf{v_W} &= (1 - 2\alpha + (1+2N)\alpha^2)/2N\\
-\mathbf{v_B}\cdot\mathbf{v_T} &= 0\\
-\mathbf{v_B}\cdot\mathbf{v_{NW}} &= 0\\
-\mathbf{v_B}\cdot\mathbf{v_W} &= \alpha\\
-\mathbf{v_T}\cdot\mathbf{v_{NW}} &= 1/2N\\
-\mathbf{v_T}\cdot\mathbf{v_W} &= (1-\alpha)/2N\\
-\mathbf{v_{NW}}\cdot\mathbf{v_W} &= (1-\alpha)/2N\\
-\end{align}
-
-\begin{equation}
-\mathbf{u_1} = \mathbf{v_B}
-\end{equation}
-
-\begin{equation}
-\mathbf{u_2} = \mathbf{v_W} - \frac{\mathbf{v_B}\cdot\mathbf{v_W}}{\mathbf{v_B}\cdot\mathbf{v_B}}\mathbf{v_B}=\mathbf{v_W} - \alpha\mathbf{v_B}
-\end{equation}
-\begin{align}
-P_{ij}\mathbf{u_2} &= P\left(\mathbf{v_W} -\alpha\mathbf{v_B}\right) = P\mathbf{v_W} -\alpha P\mathbf{v_B}\\
-\intertext{Substituting from eqs \ref{eq:Pvw} and \ref{eq:Pvb}}
-&= \frac{2-\alpha}{2} \mathbf{v_W} + \frac{\alpha}{2}\mathbf{v_B} - \alpha\mathbf{v_B}\\
-&=\frac{2-\alpha}{2} \mathbf{v_W}-\frac{\alpha}{2}\mathbf{v_B}
-\end{align}
-
-Try
+Now we need to find the second unique eigenvalue, and check that it isn't greater than 1. Try
 \begin{equation}
 \mathbf{v_2} = \mathbf{v_B} - \mathbf{v_{NW}} = \left[\begin{array}{c}
 0 \\ -1/2N \\ \vdots \\ -1/2N \\ -1/2N \\ \vdots \\ -1/2N \\ 1
-\end{array}\right]
+\end{array}\right],
 \end{equation}
-
+with norm
+\begin{equation}
+\mathbf{v_2}\cdot\mathbf{v_2} = 2N\frac{1}{4N^2} + 1 = \frac{1 + 2N}{2N}.
+\end{equation}
+When acted upon by $P$, we see
 \begin{align}
 P_{ij}\mathbf{v_2} &= \left[\begin{array}{c}
 0\\
@@ -148,14 +123,10 @@ N(-1/2N)\alpha + 1
 \end{array}\right]=\frac{2-\alpha}{2}\mathbf{v_2}
 \end{align}
 
-\begin{equation}
-\mathbf{v_2}\cdot\mathbf{v_2} = 2N\frac{1}{4N^2} + 1 = \frac{1 + 2N}{2N}
-\end{equation}
-
 Alternatively,
 \begin{align}
 P\mathbf{v_2} &= P(\mathbf{v_B} - \mathbf{v_{NW}}) = \mathbf{v_B} - (\frac{2-\alpha}{2}\mathbf{v_{NW}} + \frac{\alpha}{2}\mathbf{v_B})\\
-&=\frac{2-\alpha}{2}(\mathbf{v_B} - \mathbf{v_{NW}}) = \frac{2-\alpha}{2}\mathbf{v_2}
+&=\frac{1-\alpha}{2}(\mathbf{v_B} - \mathbf{v_{NW}}) = 1-\frac{\alpha}{2}\mathbf{v_2}
 \end{align}
 
 
@@ -179,7 +150,22 @@ As long as $0<\alpha\le1$, we know that $(2-\alpha)/2<1$, implying that
 which means that all our branches must eventually end and so we may expect finite words.
 
 
+\section{Fundamental Matrix}
+\begin{equation}
+N = \sum_{k=0}^\infty Q^k = (I_t - Q)^{-1}
+\end{equation}
 
+Now, our $Q$ is
+\begin{equation}
+Q = \left[\begin{array}{c c c}
+1/2N& \cdots& 1/2N\\
+\vdots & &\vdots\\
+1/2N& \cdots& 1/2N\\
+(1-\alpha)/2N& \cdots& (1-\alpha)/2N\\
+\vdots & &\vdots\\
+(1-\alpha)/2N& \cdots& (1-\alpha)/2N
+\end{array}\right]
+\end{equation}
 
 
 
