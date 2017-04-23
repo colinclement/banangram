@@ -20,12 +20,96 @@
 \begin{document}
 \maketitle
 
-We are interested in modeling the generation of a random lexicon as a Markov process. For the process, we imagine stringing characters together until, at some random point, the string is considered a word. At another random point, it's decided that no more words can be made using the last word as a starting point. There are thus three qualitatively different states for the Markov process (and degeneracies corresponding to the number of allowable characters). We will need to check
+\section{Introduction}
+We are interested in modeling the generation of a random lexicon as a Markov process. We will need to check
 \begin{enumerate}
 \item the columns sum to 1 (so the transition to the next state is a probability),
 \item the largest eigenvalue is equal to 1,
 \item the lexicon generated is finite (finite words are generated).
 \end{enumerate}
+
+
+\section{Word Generation}
+
+In the simplest formation of markov process language generation, we can imagine creating words randomly until, with a random chance $\gamma$ of ending the word. To avoid single letter words we need to start the chain with two letters (we will solve this problem differently in later sections. The transition matrix for this (left) Markov process may be expressed
+\begin{equation}
+P_{ij}=\left[\begin{array}{c c c c c c}
+(1-\gamma)/N & \cdots & (1-\gamma)/N& 0\\
+\vdots& & \vdots & \vdots\\
+ (1-\gamma)/N & \cdots & (1-\gamma)/N & 0\\
+\gamma & \cdots &\gamma & 1
+\end{array}
+\right].
+\end{equation}
+
+\begin{align}
+\mathbf{v_{NW}}& = \left[\begin{array}{c}
+(1-\gamma)/N \\ \vdots \\ (1-\gamma)/N \\ \gamma
+\end{array}\right] & 
+\mathbf{v_W}& = \left[\begin{array}{c}
+0 \\ \vdots \\ 0 \\ 1
+\end{array}\right] & 
+\end{align}
+
+\begin{align}
+P_{ij}\mathbf{v_{NW}} &= \left[\begin{array}{c}
+N((1-\gamma)/N)^2\\\vdots\\N((1-\gamma)/N)^2\\N\gamma(1-\gamma)/N + \gamma
+\end{array}\right] = \left[\begin{array}{c}
+(1-\gamma)(1-\gamma)/N\\\vdots\\(1-\gamma)(1-\gamma)/N\\ \gamma(2-\gamma)
+\end{array}\right]\\ 
+&=(1-\gamma)\mathbf{v_{NW}} + \gamma\mathbf{v_W}
+\end{align}
+
+\begin{equation}
+P_{ij}\mathbf{v_W} = \left[\begin{array}{c}
+0\\\vdots\\0\\1
+\end{array}\right] = \mathbf{v_W}
+\end{equation}
+
+Write
+\begin{equation}
+P = \left[\begin{array}{c c}
+Q & 0\\
+R & I
+\end{array}\right],
+\end{equation}
+Where $Q$ represents the transient-to-transient transitions, $R$ the transient-to-absorbed transitions, and $I$ is the identity matrix with rank corresponding to the number of absorbing states. 
+\begin{equation}
+Q=\left[\begin{array}{c c c c c c}
+(1-\gamma)/N & \cdots & (1-\gamma)/N\\
+\vdots& & \vdots \\
+ (1-\gamma)/N & \cdots & (1-\gamma)/N
+ \end{array}\right]
+ \end{equation}
+
+The matrix
+\begin{equation}
+N = \sum_{k=0}Q^k = (I - Q)^{-1}
+\end{equation}
+represents the number of times a transient state is expected to be hit on the way to an absorbing state starting from a specific place. If we substitute our $Q$ matrix, we find
+\begin{equation}
+N = I + \frac{1}{\gamma}Q
+\end{equation}
+
+Note:
+\begin{equation}
+NR = (I + \frac{1}{\gamma}Q)\gamma\mathbf{1} = \gamma \mathbf{1} + Q\mathbf{1} = (\gamma + (1-\gamma))\mathbf{1} = \mathbf{1}
+\end{equation}
+
+\begin{equation}
+N\mathbf{1} = (I + \frac{1}{\gamma}Q)\mathbf{1} = \mathbf{1} + \frac{1}{\gamma}Q\mathbf{1} = (1 + \frac{1-\gamma}{\gamma})\mathbf{1} = \frac{1}{\gamma}\mathbf{1}
+\end{equation}
+
+
+\begin{equation}
+<\ell> = 1 + 1 + N\frac{(1-\gamma)}{N\gamma} = \frac{\gamma +1}{\gamma}
+\end{equation}
+
+
+
+\section{Lexicon Branch Generation}
+For the process, we imagine stringing characters together until, at some random point, the string is considered a word. At another random point, it's decided that no more words can be made using the last word as a starting point. There are thus three qualitatively different states for the Markov process (and degeneracies corresponding to the number of allowable characters). 
+
 The possible states from the first letter come from adding a character that does not finish a word, adding a character that finishes a word, and the bottom node (corresponding to a finished word that has no suffixes). For $N$ characters, the transition matrix $P$ for this process has a shape of $2N+1\times2N+1$ ($N$ characters that don't finish words, $N$ characters that could finish words, and the bottom node). If we imagine each character as equally likely and completable words being completed with probability $\alpha$, then the transition matrix can be expressed as
 \begin{equation}
 P_{ij}=\left[\begin{array}{c c c c c c}
@@ -45,13 +129,13 @@ We've got to unpack this a little. The first $N$ rows correspond to the $N$ char
 The columns can similarly be partitioned into those three categories, where we define the following vectors
 \begin{align}
 \mathbf{v_{NW}}& = \left[\begin{array}{c}
-0 \\ 1/2N \\ \vdots \\ 1/2N \\ 1/2N \\ \vdots \\ 1/2N \\ 0
+ 1/2N \\ \vdots \\ 1/2N \\ 1/2N \\ \vdots \\ 1/2N \\ 0
 \end{array}\right] & 
 \mathbf{v_W}& = \left[\begin{array}{c}
-0 \\ (1-\alpha)/2N \\ \vdots \\ (1-\alpha)/2N \\ (1-\alpha)/2N \\ \vdots \\ (1-\alpha)/2N \\ \alpha
+(1-\alpha)/2N \\ \vdots \\ (1-\alpha)/2N \\ (1-\alpha)/2N \\ \vdots \\ (1-\alpha)/2N \\ \alpha
 \end{array}\right] & 
 \mathbf{v_B}& = \left[\begin{array}{c}
-0 \\ 0 \\ \vdots \\ 0 \\ 0 \\ \vdots \\ 0 \\ 1
+0 \\ \vdots \\ 0 \\ 0 \\ \vdots \\ 0 \\ 1
 \end{array}\right] & 
 \end{align}
 Clearly there are many linear dependencies between the columns (as there are $N$ each of $\mathbf{v_{NW}}$ and $\mathbf{v_W}$). An additional linear dependence that is of note is
@@ -72,17 +156,17 @@ Before jumping to the eigendecomposition, let's explore some of the properties o
 Now, evaluate how each of these vectors is acted upon by $P$.
 \begin{align}
 P_{ij}\mathbf{v_{NW}} &= \left[\begin{array}{c}
-0\\N(1/2N)^2 + N(1/2N)((1-\alpha)/2N)\\\vdots\\N(1/2N)^2 + N(1/2N)((1-\alpha)/2N)\\N(1/2N)\alpha
+N(1/2N)^2 + N(1/2N)((1-\alpha)/2N)\\\vdots\\N(1/2N)^2 + N(1/2N)((1-\alpha)/2N)\\N(1/2N)\alpha
 \end{array}\right] = \left[\begin{array}{c}
-0\\(2-\alpha)/4N\\\vdots\\(2-\alpha)/4N\\\alpha/2
+(2-\alpha)/4N\\\vdots\\(2-\alpha)/4N\\\alpha/2
 \end{array}\right]\\ 
 &= \frac{2-\alpha}{2}\mathbf{v_{NW}} + \frac{\alpha}{2}\mathbf{v_B}
 \end{align}
 \begin{align}
 P_{ij}\mathbf{v_{W}} &= \left[\begin{array}{c}
-0\\N(1/2N)((1-\alpha)/2N) + N((1-\alpha)/2N)^2\\\vdots\\N(1/2N)((1-\alpha)/2N) + N((1-\alpha)/2N)^2\\N\alpha(1-\alpha)/2N + \alpha
+N(1/2N)((1-\alpha)/2N) + N((1-\alpha)/2N)^2\\\vdots\\N(1/2N)((1-\alpha)/2N) + N((1-\alpha)/2N)^2\\N\alpha(1-\alpha)/2N + \alpha
 \end{array}\right] = \left[\begin{array}{c}
-0\\(1-\alpha)(2-\alpha)/4N\\\vdots\\(1-\alpha)(2-\alpha)/4N\\ \alpha(3-\alpha)/2
+(1-\alpha)(2-\alpha)/4N\\\vdots\\(1-\alpha)(2-\alpha)/4N\\ \alpha(3-\alpha)/2
 \end{array}\right]\\ 
 &=\frac{2-\alpha}{2}\mathbf{v_W} + \frac{\alpha}{2}\mathbf{v_B}\label{eq:Pvw}
 \end{align}
@@ -96,7 +180,7 @@ Observe that the bottom node state transitions only to itself, and is therefore 
 Now we need to find the second unique eigenvalue, and check that it isn't greater than 1. Try
 \begin{equation}
 \mathbf{v_2} = \mathbf{v_B} - \mathbf{v_{NW}} = \left[\begin{array}{c}
-0 \\ -1/2N \\ \vdots \\ -1/2N \\ -1/2N \\ \vdots \\ -1/2N \\ 1
+-1/2N \\ \vdots \\ -1/2N \\ -1/2N \\ \vdots \\ -1/2N \\ 1
 \end{array}\right],
 \end{equation}
 with norm
@@ -106,20 +190,18 @@ with norm
 When acted upon by $P$, we see
 \begin{align}
 P_{ij}\mathbf{v_2} &= \left[\begin{array}{c}
-0\\
 N(-1/2N)(1/2N) + N(-1/2N)((1-\alpha)/2N)\\
 \vdots\\
 N(-1/2N)(1/2N) + N(-1/2N)((1-\alpha)/2N) \\
 N(-1/2N)\alpha + 1
 \end{array}\right] \\
 &=\left[\begin{array}{c}
-0\\
 ((2-\alpha)/2)(-1/2N)\\
 \vdots\\
 ((2-\alpha)/2)(-1/2N) \\
 (2-\alpha)/2
 \end{array}\right]= \frac{2-\alpha}{2}\left[\begin{array}{c}
-0\\-1/2N\\\vdots\\-1/2N\\1
+-1/2N\\\vdots\\-1/2N\\1
 \end{array}\right]=\frac{2-\alpha}{2}\mathbf{v_2}
 \end{align}
 
@@ -167,7 +249,93 @@ Q = \left[\begin{array}{c c c}
 \end{array}\right]
 \end{equation}
 
+\begin{equation}
+Q^* = \left[\begin{array}{c c c}
+1/N\alpha& \cdots& 1/N\alpha\\
+\vdots & &\vdots\\
+1/N\alpha& \cdots& 1/N\alpha\\
+(1-\alpha)/N\alpha& \cdots& (1-\alpha)/N\alpha\\
+\vdots & &\vdots\\
+(1-\alpha)/N\alpha& \cdots& (1-\alpha)/N\alpha
+\end{array}\right]
+\end{equation}
 
+\begin{equation}
+N = (I - Q)^{-1} = I + Q^*
+\end{equation}
+
+The expected length of a branch (the expected number of steps before hitting the absorbing bottom node state) is $t_\textrm{branch}=1+2N(1/N\alpha)=1+2/\alpha$. As the probability of ending the branch decreases, this increases.
+
+The number of words in a branch corresponds to the number of times the chain visits a word-ending character. The entries $N_{ij}$ are the expected number of times that transient state $j$ is visited before being absorbed, given that the chain started in state $i$. We will always be starting in a nonword character state, and we don't care which word-ending character we hit. Summing along one of the rows corresponding to starting at a non-word ending character, we see that the expected number of words per chain is $N/N\alpha = 1/\alpha$.
+
+To get the expected word length, we need to compute the number of times we visit one of the characters that end words (which are transient states). The probability of visiting 
+\begin{equation}
+H = (N-I_t)\textrm{diag}^{-1}(N)
+\end{equation}
+
+\section{Word Branch Generation, tunable word probability}
+
+\begin{equation}
+P_{ij}=\left[\begin{array}{c c c c c c}
+(1-\beta)/N&\cdots & (1-\alpha)(1-\beta)/N & \cdots & 0\\
+ \vdots & & \vdots & & \vdots\\
+(1-\beta)/N & \cdots & (1-\alpha)(1-\beta)/N & \cdots & 0\\
+\beta/N & \cdots & (1-\alpha)\beta/N & \cdots & 0\\
+\vdots & & \vdots & & \vdots\\
+\beta/N & \cdots & (1-\alpha)\beta/N & \cdots & 0\\
+0 & \cdots & \alpha & \cdots & 1
+\end{array}
+\right].
+\end{equation}
+
+\begin{align}
+\mathbf{v_{NW}}& = \left[\begin{array}{c}
+(1-\beta)/N \\ \vdots \\ (1-\beta)/N \\ \beta/N \\ \vdots \\ \beta/N \\ 0
+\end{array}\right] & 
+\mathbf{v_W}& = \left[\begin{array}{c}
+ (1-\alpha)(1-\beta)/N \\ \vdots \\ (1-\alpha)(1-\beta)/N \\ (1-\alpha)\beta/N \\ \vdots \\ (1-\alpha)\beta/N \\ \alpha
+\end{array}\right] & 
+\mathbf{v_B}& = \left[\begin{array}{c}
+0 \\ \vdots \\ 0 \\ 0 \\ \vdots \\ 0 \\ 1
+\end{array}\right] & 
+\end{align}
+
+\begin{equation}
+\mathbf{v_{NW}}\cdot\mathbf{v_W} = \frac{1-\alpha}{N^2}(N(1-\beta)^2 + N\beta^2) = \frac{1-\alpha}{N}(1 - 2\beta + 2\beta^2)
+\end{equation} 
+
+\begin{equation}
+Q=\left[\begin{array}{c c c c c c}
+(1-\beta)/N&\cdots & (1-\alpha)(1-\beta)/N & \cdots\\
+ \vdots & & \vdots & & \vdots\\
+(1-\beta)/N & \cdots & (1-\alpha)(1-\beta)/N & \cdots\\
+\beta/N & \cdots & (1-\alpha)\beta/N & \cdots \\
+\vdots & & \vdots & & \vdots\\
+\beta/N & \cdots & (1-\alpha)\beta/N & \cdots\\
+\end{array}
+\right].
+\end{equation}
+
+\begin{align}
+Q^2 &= (1-\alpha\beta)Q\\
+\implies Q^k &= (1-\alpha\beta)^{k-1}Q
+\end{align}
+Thus
+\begin{equation}
+N = \sum_{k=0}^\infty Q^k = I + \frac{1}{\alpha\beta}Q.
+\end{equation}
+
+The expected length of a chain starting from the not-word state
+\begin{align}
+(N\mathbf{1})_{NW} &= (I + \frac{1}{\alpha\beta}Q)\mathbf{1} = \mathbf{1} + \frac{1}{\alpha\beta}Q\mathbf{1} \\ &= \left(1 + \frac{1}{\alpha\beta}\left(N\frac{1-\beta}{N} + N\frac{(1-\alpha)(1-\beta)}{N}\right)\right)\mathbf{1} \\
+&=\left(1 + \frac{1}{\alpha\beta}(1-\beta)(2-\alpha))\right)\mathbf{1}
+\end{align}
+
+\begin{align}
+\sum_{k=0}^\infty k Q^k &= \sum_{k=1}^\infty k(1-\alpha\beta)^{k-1}\frac{\beta}{N}\\
+&=\frac{\beta}{N(1-\alpha\beta)}\sum_{k=1}^\infty k(1-\alpha\beta)^k \\
+&=\frac{\beta}{N(1-\alpha\beta)}\frac{(1-\alpha\beta)}{(1-(1-\alpha\beta))^2}\\ & = \frac{\beta}{N\alpha^2\beta^2}
+\end{align}
 
 
 \appendix
