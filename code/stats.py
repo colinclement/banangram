@@ -7,8 +7,9 @@ date: 2017-02-13
 Methods for generating and analysing random lexicons.
 """
 
-import random, itertools
+import random, itertools, string
 import numpy as np
+from bisect import bisect
 from scipy.special import binom
 
 from rack import gen_rack, genfreqlist
@@ -102,18 +103,117 @@ def generate_rand_dawg(nchars, nwords, wordlenpdf=None):
     trie_to_dawg(G)
     return G
 
-def generate_markov_lexicon(nchars, maxwordlength=10, prob=0.5):
+def markov_branch_trans(N, alpha, beta=0.5):
+    """Generate the transition matrix for a lexicon branch.
+    input:
+        N: number of characters in lexicon
+        alpha: the probability that a word ends a branch
+        beta: the probability that words end
     """
-    Generate a random lexicon for which 
+    P = np.zeros((2*N+1, 2*N+1)) 
+    # N v_NW
+    P[:N,:N] = (1.-beta)/N
+    P[N:2*N,:N] = beta/N
+    # N v_W
+    P[:N, N:2*N] = (1.-alpha)*(1-beta)/N
+    P[N:2*N, N:2*N] = (1.-alpha)*beta/N
+    P[-1, N:2*N] = alpha
+    # v_B
+    P[-1,-1] = 1.
+
+    return P
+    
+
+def markov_branch(P, N, wordlist=None):
+    """Generate a single branch of a Markov lexicon, with transition matrix P.
+
+    inputs:
+        P: Transition matrix
+        N: Number of characters in lexicon
+        wordlist: The list of words already in lexicon (default empty list)
     """
-    assert nchars <= 26, 'Currently only supports english characters'
-    chars = 'abcdefghijklmnopqrstuvwxyz'[:nchars]
 
-    lex = []
-    for wordlength in range(1, maxwordlength):
-        for word in itertools.combinations_with_replacement(chars, wordlength):
-            if random.random() < prob:
-                lex.append(''.join(word))
+    assert P.shape == ((2*N+1), (2*N+1))
+    wordlist = wordlist or []
 
-    lexstr = '\n'.join(lex)
-    return lexstr
+    # Initial state
+    i = random.randint(0,N-1)
+    branch = string.ascii_lowercase[i]
+    v = np.zeros(2*N + 1)
+    v[i] = 1.
+    
+    while True:
+        # Compute transition probabilities for next state.
+        v = P.dot(v)
+        # Cumulative sums will aid in choosing next state.
+        cumv = np.cumsum(v)
+        
+        # We choose a random number and look for which state corresponds.
+        i = bisect(cumv, np.random.rand())
+
+        # Update the state
+        v *= 0
+        v[i]=1.
+
+        # Check if transition is nonword ending,
+        if i<N:
+            branch += string.ascii_lowercase[i]
+        # word ending,
+        elif N<=i<2*N:
+            branch += string.ascii_lowercase[i-N]
+            # (so add it to the wordlist)
+            wordlist.append(branch)
+        # or branch ending.
+        else:
+            return wordlist
+
+
+
+def markov_word_trans(N, gamma=0.5):
+    """Generate the transition matrix for a lexicon word.
+    input:
+        N: number of characters in lexicon
+        gamma: the probability that words end
+    """
+    P = np.zeros((N+1, N+1))
+    # N v_NW
+    P[:N,:N] = (1.-gamma)/N
+    P[-1,:-1] = gamma
+    # v_W
+    P[-1,-1] = 1.
+
+    return P
+
+def markov_word(P, N):
+    """Generate a single word for a Markov lexicon, with transition matrix P.
+    input:
+        P: transition matrix (see markov_word_trans)
+        N: number of characters
+    """
+
+    assert P.shape == (N+1,N+1)
+    i = random.randint(0,N-1)
+    word = string.ascii_lowercase[random.randint(0,N-1)]+string.ascii_lowercase[i]
+
+    # Initial state
+    v = np.zeros(N + 1)
+    v[i] = 1.
+
+    while True:
+        # Compute transition probabilities for next state.
+        v = P.dot(v)
+        # Cumulative sums will aid in choosing next state.
+        cumv = np.cumsum(v)
+        #print cumv
+
+        # We choose a random number and look for which state corresponds.
+        i = bisect(cumv, np.random.rand())
+
+        # Check if transition is nonword ending,
+        if i<N:
+            word += string.ascii_lowercase[i]
+            v = np.zeros(N+1)
+            v[i]=1.
+        # or word ending.
+        elif i == N:
+            return word
