@@ -12,6 +12,7 @@ combining word nodes with matching suffixes.
 
 from collections import defaultdict
 from datetime import datetime
+from functools import reduce
 
 
 class Node(object):

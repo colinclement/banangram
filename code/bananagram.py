@@ -10,11 +10,13 @@ This does it, it plays bananagrams
 from collections import defaultdict
 from graph import DirectedGraph, trie_to_dawg
 from board import Board
+from functools import reduce
 
 def flatten(lst):
     return reduce(lambda x, y: x + y, lst, [])
 
 def argsort(lst, **kwargs):
+    lst = list(lst)
     return sorted(range(len(lst)), key=lst.__getitem__, **kwargs)
 
 class Bananagrams(object):
